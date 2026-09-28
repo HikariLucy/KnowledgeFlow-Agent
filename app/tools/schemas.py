@@ -1,7 +1,8 @@
-"""Typed tool-input schemas for agent Function Calling."""
+"""Typed tool schemas for KnowledgeFlow Agent Function Calling."""
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.rag.schemas import SourceScope, SourceType
 from app.storage.models import (
     IncidentCategory,
     IncidentSeverity,
@@ -76,3 +77,54 @@ class AppendIncidentNoteInput(BaseModel):
         if not value:
             raise ValueError("value cannot be empty or whitespace only")
         return value
+
+
+class KnowledgeQueryInput(BaseModel):
+    """Arguments accepted by the search_knowledge tool."""
+
+    query: str = Field(
+        ...,
+        description="Question to answer using the organizational knowledge base",
+    )
+    source_scope: SourceScope | None = Field(
+        default=None,
+        description=(
+            "Optional source restriction: internal, external or all. "
+            "When omitted, the existing source router decides."
+        ),
+    )
+    top_k: int | None = Field(
+        default=None,
+        ge=1,
+        le=20,
+        description="Optional maximum number of evidence chunks to retrieve",
+    )
+
+    @field_validator("query")
+    @classmethod
+    def validate_query(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("query cannot be empty or whitespace only")
+        return value
+
+
+class KnowledgeSource(BaseModel):
+    """Evidence source exposed by the knowledge tool."""
+
+    id: str
+    file_name: str
+    source_type: SourceType
+    chunk_index: int | None = None
+    score: float
+
+
+class KnowledgeQueryResult(BaseModel):
+    """Structured result returned to an agent after a RAG consultation."""
+
+    query: str
+    source_scope: SourceScope
+    answer: str
+    citations: list[str] = Field(default_factory=list)
+    sources: list[KnowledgeSource] = Field(default_factory=list)
+    abstained: bool = False
