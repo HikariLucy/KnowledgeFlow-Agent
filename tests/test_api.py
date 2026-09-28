@@ -68,13 +68,23 @@ def test_api_query_success(fake_rag_pipeline):
     assert data["abstained"] is False
 
 
-def test_api_query_empty_raises_422():
+def test_api_query_empty_raises_422(fake_rag_pipeline):
     """Verify POST /api/query with empty query returns 422 Unprocessable Entity."""
+    import app.api.routes as api_routes
+    api_routes._cached_pipeline = None
+
+    app.dependency_overrides[get_rag_pipeline] = lambda: fake_rag_pipeline
     client = TestClient(app)
-    response = client.post(
-        "/api/query",
-        json={"query": "   "},
-    )
+
+    try:
+        response = client.post(
+            "/api/query",
+            json={"query": "   "},
+        )
+    finally:
+        app.dependency_overrides.clear()
+        api_routes._cached_pipeline = None
+
     assert response.status_code == 422
 
 
