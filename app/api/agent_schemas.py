@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from app.agentic.orchestrator import ExecutionStatus
 from app.tools.schemas import (
-    AppendIncidentNoteInput,
+    AppendIncidentNoteDraft,
     CreateIncidentInput,
     KnowledgeQueryInput,
     SearchIncidentsInput,
@@ -28,7 +28,7 @@ class AgentRequest(BaseModel):
     knowledge_query: KnowledgeQueryInput | None = None
     create_incident: CreateIncidentInput | None = None
     search_incidents: SearchIncidentsInput | None = None
-    append_incident_note: AppendIncidentNoteInput | None = None
+    append_incident_note: AppendIncidentNoteDraft | None = None
 
     @field_validator("conversation_id", "message")
     @classmethod
