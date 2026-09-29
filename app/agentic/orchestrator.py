@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 from app.agentic.planner import RuleBasedPlanner
 from app.agentic.state import AgentState
+from app.memory.write_back import MemoryWriteBack
 from app.tools.incidents import (
     AppendIncidentNoteTool,
     CreateIncidentTool,
@@ -52,12 +53,14 @@ class AdaptiveOrchestrator:
         create_incident_tool: CreateIncidentTool | None = None,
         search_incidents_tool: SearchIncidentsTool | None = None,
         append_incident_note_tool: AppendIncidentNoteTool | None = None,
+        memory_write_back: MemoryWriteBack | None = None,
     ) -> None:
         self.planner = planner
         self.knowledge_tool = knowledge_tool
         self.create_incident_tool = create_incident_tool
         self.search_incidents_tool = search_incidents_tool
         self.append_incident_note_tool = append_incident_note_tool
+        self.memory_write_back = memory_write_back
 
     @staticmethod
     def _tool_input(
@@ -73,8 +76,33 @@ class AdaptiveOrchestrator:
 
         return None
 
-    @staticmethod
+    def _finalize(
+        self,
+        result: OrchestrationResult,
+    ) -> OrchestrationResult:
+        """Persist conversational and operational memory without breaking execution."""
+        if self.memory_write_back is None:
+            return result
+
+        try:
+            self.memory_write_back.record(
+                state=result.state,
+                output=result.output,
+                status=result.status.value,
+            )
+        except Exception as exc:
+            result.state.observations.append(
+                {
+                    "component": "memory_write_back",
+                    "status": "unavailable",
+                    "error_type": type(exc).__name__,
+                }
+            )
+
+        return result
+
     def _clarification(
+        self,
         state: AgentState,
         question: str,
     ) -> OrchestrationResult:
@@ -82,14 +110,16 @@ class AdaptiveOrchestrator:
         state.requires_clarification = True
         state.clarification_question = question
 
-        return OrchestrationResult(
-            status=ExecutionStatus.NEEDS_CLARIFICATION,
-            state=state,
-            output=question,
+        return self._finalize(
+            OrchestrationResult(
+                status=ExecutionStatus.NEEDS_CLARIFICATION,
+                state=state,
+                output=question,
+            )
         )
 
-    @staticmethod
     def _failure(
+        self,
         state: AgentState,
         component: str,
     ) -> OrchestrationResult:
@@ -101,10 +131,12 @@ class AdaptiveOrchestrator:
             }
         )
 
-        return OrchestrationResult(
-            status=ExecutionStatus.FAILED,
-            state=state,
-            output=f"Componente no disponible: {component}.",
+        return self._finalize(
+            OrchestrationResult(
+                status=ExecutionStatus.FAILED,
+                state=state,
+                output=f"Componente no disponible: {component}.",
+            )
         )
 
     def execute(
@@ -185,10 +217,12 @@ class AdaptiveOrchestrator:
                     )
 
                 if result.abstained:
-                    return OrchestrationResult(
-                        status=ExecutionStatus.ABSTAINED,
-                        state=state,
-                        output=result.answer,
+                    return self._finalize(
+                        OrchestrationResult(
+                            status=ExecutionStatus.ABSTAINED,
+                            state=state,
+                            output=result.answer,
+                        )
                     )
 
             elif tool_name == "create_incident":
@@ -384,8 +418,10 @@ class AdaptiveOrchestrator:
                     tool_name,
                 )
 
-        return OrchestrationResult(
-            status=ExecutionStatus.COMPLETED,
-            state=state,
-            output=output,
+        return self._finalize(
+            OrchestrationResult(
+                status=ExecutionStatus.COMPLETED,
+                state=state,
+                output=output,
+            )
         )

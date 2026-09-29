@@ -198,3 +198,31 @@ def test_planner_loads_semantic_memory_and_reuses_incident_id():
     assert decision.incident_id == "INC-00031"
     assert decision.requires_clarification is False
     assert state.incident_id == "INC-00031"
+
+
+def test_planner_uses_incident_memory_for_natural_follow_up():
+    planner = RuleBasedPlanner()
+
+    state = _state(
+        "Agrega que la identidad ya fue validada."
+    )
+
+    state.memory_context = [
+        {
+            "memory_kind": "long_term",
+            "content": "Se creó el incidente INC-00017 por pérdida de MFA.",
+            "metadata": {
+                "incident_id": "INC-00017",
+            },
+        }
+    ]
+
+    decision = planner.plan(state)
+
+    assert decision.intent == PlanningIntent.INCIDENT_NOTE
+    assert decision.incident_id == "INC-00017"
+    assert decision.required_tools == [
+        "search_incidents",
+        "append_incident_note",
+    ]
+    assert decision.requires_clarification is False

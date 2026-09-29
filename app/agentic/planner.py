@@ -157,6 +157,8 @@ class RuleBasedPlanner:
     def _classify_intent(
         self,
         request: str,
+        *,
+        has_incident_context: bool = False,
     ) -> PlanningIntent:
         """Classify the request into one supported planning intent."""
         text = self._normalize(request)
@@ -201,7 +203,7 @@ class RuleBasedPlanner:
             "que incidente",
         )
 
-        if incident_present and any(
+        if (incident_present or has_incident_context) and any(
             marker in text
             for marker in note_markers
         ):
@@ -230,11 +232,12 @@ class RuleBasedPlanner:
 
         self.hydrate_memory_context(state)
 
-        intent = self._classify_intent(
-            state.user_request
-        )
-
         incident_id = self._find_incident_id(state)
+
+        intent = self._classify_intent(
+            state.user_request,
+            has_incident_context=incident_id is not None,
+        )
 
         if intent == PlanningIntent.INCIDENT_CREATE:
             decision = PlanDecision(
