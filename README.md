@@ -2,7 +2,7 @@
 
 Agente inteligente organizacional desarrollado para **ISY0101 - Ingeniería de Soluciones con IA (Evaluación Parcial N°2)**. El proyecto evoluciona directamente desde **KnowledgeFlow RAG**, reutilizando el motor RAG de la EP1 como una herramienta de consulta dentro de una arquitectura agentic con estado, persistencia, herramientas tipadas, memoria y planificación adaptativa.
 
-> **Estado actual:** fundación EP2 en desarrollo sobre la rama feat/ep2-agent-foundation. La base heredada de EP1 se mantiene funcional y la suite completa suma actualmente **229 pruebas automatizadas offline**.
+> **Estado actual:** fundación EP2 en desarrollo sobre la rama feat/ep2-agent-foundation. La base heredada de EP1 se mantiene funcional y la suite completa suma actualmente **233 pruebas automatizadas offline**.
 
 ---
 
@@ -137,10 +137,11 @@ La solución se diseña de forma modular para que cada capacidad pueda probarse 
 - E2E live CrewAI + RAG real validado: el Manager jerárquico delegó al Knowledge Agent, `KnowledgeRAGTool` ejecutó FAISS/Gemini real, se conservaron fuentes/citas y no hubo escrituras operacionales.
 - **MemoryWriteBack** integrado al orquestador para registrar el turno reciente y persistir eventos operacionales útiles.
 - continuidad multi-turno validada: un incidente creado en un turno puede recuperarse semánticamente en el siguiente sin repetir explícitamente su identificador.
+- API agentic `POST /api/agent` implementada y validada en vivo con RAG real, trazabilidad de plan/tools, fuentes y observaciones estructuradas.
 
 ### Próximos hitos
 
-- exponer el flujo agentic mediante una API dedicada;
+- completar continuidad multi-turno de escritura a través de la API sin exigir repetir `incident_id`;
 - trazabilidad visual de plan, herramientas, memoria y resultados;
 - escenarios end-to-end live de lectura + escritura para la demo de EP2.
 
@@ -779,7 +780,7 @@ pytest -q
 Estado actual:
 
 ~~~text
-229 passed
+233 passed
 20 warnings de deprecación provenientes de FastAPI/Starlette y CrewAI
 ~~~
 
@@ -915,7 +916,7 @@ Controles presentes o planificados:
 | Planificación | RuleBasedPlanner + AgentState + selección de tools | Implementado |
 | Decisiones adaptativas | abstención, aclaración y bloqueo de escrituras según observaciones | Implementado |
 | README y arquitectura | este documento + documentación heredada | En progreso |
-| Pruebas | 229 pruebas offline | Implementado |
+| Pruebas | 233 pruebas offline | Implementado |
 | Demo agentic end-to-end | CrewAI jerárquico + KnowledgeRAGTool + FAISS/Gemini real | Implementado para consulta read-only |
 
 Esta tabla se actualizará a medida que los hitos de EP2 se completen.
@@ -969,7 +970,10 @@ Esta tabla se actualizará a medida que los hitos de EP2 se completen.
 [✓] continuidad multi-turno
 [✓] recuperación semántica de incident_id en follow-up natural
 [✓] 229 pruebas verdes
-[ ] API agentic
+[✓] API agentic `POST /api/agent`
+[✓] respuesta estructurada con plan, tools, memoria, fuentes y observaciones
+[✓] smoke live API → planner → RAG real
+[✓] 233 pruebas verdes
 [ ] decisiones adaptativas live de lectura + escritura
 [ ] UI agentic / trace
 [ ] evidencia de demo
@@ -1025,7 +1029,7 @@ Estos documentos corresponden a la etapa RAG y serán complementados con documen
 
 **Adapters jerárquicos CrewAI:** dda00a9
 
-**Suite actual:** 229 pruebas aprobadas.
+**Suite actual:** 233 pruebas aprobadas.
 
 **Smoke live CrewAI:** PASS con `gemini-3.5-flash-lite`, delegación real a `search_knowledge` y cero escrituras operacionales.
 
@@ -1035,6 +1039,8 @@ Estos documentos corresponden a la etapa RAG y serán complementados con documen
 
 **Memoria multi-turno:** PASS; `MemoryWriteBack` persiste eventos operacionales relevantes y el planner puede recuperar `incident_id` desde memoria semántica en un follow-up natural.
 
-**Validación local:** 229 pruebas aprobadas, `compileall` correcto, `pip check` sin dependencias rotas y `git diff --check` limpio.
+**API agentic live:** PASS; `POST /api/agent` devolvió `200 OK`, intención `knowledge_query`, plan y tool calls trazables, cuatro fuentes reales y respuesta grounded con cita `S1`.
 
-El siguiente hito técnico es exponer la ejecución agentic mediante una API dedicada y estructurar la respuesta con estado, plan, tools, memoria, fuentes y resultado para su posterior visualización en la UI.
+**Validación local:** 233 pruebas aprobadas, `compileall` correcto, `pip check` sin dependencias rotas y `git diff --check` limpio.
+
+El siguiente hito técnico es completar la continuidad multi-turno de escritura a través de la API y después conectar la trazabilidad estructurada a la UI.
