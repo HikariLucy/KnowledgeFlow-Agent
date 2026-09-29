@@ -364,12 +364,35 @@ class AdaptiveOrchestrator:
                 )
 
                 if arguments is None:
-                    return self._clarification(
-                        state,
-                        (
-                            "¿Qué información de seguimiento "
-                            "deseas agregar al incidente?"
-                        ),
+                    draft = self._tool_input(
+                        inputs,
+                        "append_incident_note",
+                        AppendIncidentNoteDraft,
+                    )
+
+                    if draft is None:
+                        return self._clarification(
+                            state,
+                            (
+                                "¿Qué información de seguimiento "
+                                "deseas agregar al incidente?"
+                            ),
+                        )
+
+                    incident_id = draft.incident_id or state.incident_id
+
+                    if incident_id is None:
+                        return self._clarification(
+                            state,
+                            (
+                                "¿A qué incidente deseas agregar "
+                                "el seguimiento?"
+                            ),
+                        )
+
+                    arguments = AppendIncidentNoteInput(
+                        incident_id=incident_id,
+                        note=draft.note,
                     )
 
                 if (
