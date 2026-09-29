@@ -233,3 +233,14 @@ def test_agent_ui_route_serves_workspace():
     assert response.status_code == 200
     assert "KnowledgeFlow Agent" in response.text
     assert "agent.js" in response.text
+
+
+def test_agent_ui_exposes_guided_memory_followup_action():
+    client = TestClient(app)
+
+    response = client.get("/agent")
+
+    assert response.status_code == 200
+    assert "prepare-followup-btn" in response.text
+    assert "Continuar con seguimiento" in response.text
+    assert "Cargar creación MFA" in response.text
