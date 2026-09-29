@@ -223,3 +223,13 @@ def test_agent_api_accepts_followup_without_incident_id():
     assert draft is not None
     assert draft.incident_id is None
     assert draft.note == "Identidad del usuario validada."
+
+
+def test_agent_ui_route_serves_workspace():
+    client = TestClient(app)
+
+    response = client.get("/agent")
+
+    assert response.status_code == 200
+    assert "KnowledgeFlow Agent" in response.text
+    assert "agent.js" in response.text
