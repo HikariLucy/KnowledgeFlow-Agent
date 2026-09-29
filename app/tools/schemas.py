@@ -58,6 +58,45 @@ class SearchIncidentsInput(BaseModel):
     )
 
 
+class AppendIncidentNoteDraft(BaseModel):
+    """Follow-up note whose incident can be resolved from workflow memory."""
+
+    incident_id: str | None = Field(
+        default=None,
+        description=(
+            "Optional public incident identifier. When omitted, the "
+            "orchestrator must resolve it from validated workflow context "
+            "before invoking the write tool."
+        ),
+    )
+    note: str = Field(
+        ...,
+        description="Follow-up information to append to the incident",
+    )
+
+    @field_validator("incident_id")
+    @classmethod
+    def validate_optional_incident_id(
+        cls,
+        value: str | None,
+    ) -> str | None:
+        if value is None:
+            return None
+
+        value = value.strip()
+        if not value:
+            raise ValueError("incident_id cannot be whitespace only")
+        return value
+
+    @field_validator("note")
+    @classmethod
+    def validate_note(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("note cannot be empty or whitespace only")
+        return value
+
+
 class AppendIncidentNoteInput(BaseModel):
     """Arguments accepted by the append_incident_note tool."""
 
