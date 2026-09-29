@@ -36,6 +36,15 @@ async def serve_ui():
     return {"message": "KnowledgeFlow RAG UI static files not found."}
 
 
+@app.get("/agent", tags=["UI"], include_in_schema=False)
+async def serve_agent_ui():
+    """Serve the KnowledgeFlow Agent EP2 workspace."""
+    agent_file = UI_STATIC_DIR / "agent.html"
+    if agent_file.exists():
+        return FileResponse(agent_file)
+    return {"message": "KnowledgeFlow Agent UI static files not found."}
+
+
 @app.get("/health", tags=["Health"])
 async def health_check():
     """Service healthcheck endpoint."""
