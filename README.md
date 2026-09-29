@@ -2,7 +2,7 @@
 
 Agente inteligente organizacional desarrollado para **ISY0101 - Ingeniería de Soluciones con IA (Evaluación Parcial N°2)**. El proyecto evoluciona directamente desde **KnowledgeFlow RAG**, reutilizando el motor RAG de la EP1 como una herramienta de consulta dentro de una arquitectura agentic con estado, persistencia, herramientas tipadas, memoria y planificación adaptativa.
 
-> **Estado actual:** fundación EP2 en desarrollo sobre la rama feat/ep2-agent-foundation. La base heredada de EP1 se mantiene funcional y la suite completa suma actualmente **217 pruebas automatizadas offline**.
+> **Estado actual:** fundación EP2 en desarrollo sobre la rama feat/ep2-agent-foundation. La base heredada de EP1 se mantiene funcional y la suite completa suma actualmente **224 pruebas automatizadas offline**.
 
 ---
 
@@ -127,10 +127,13 @@ La solución se diseña de forma modular para que cada capacidad pueda probarse 
 - **KnowledgeAgent** restringido a `search_knowledge`.
 - **OperationsAgent** restringido a creación, búsqueda y seguimiento de incidentes.
 - perfiles de agentes independientes del framework para facilitar la integración posterior con CrewAI.
+- **CrewAIAdapter** para mapear perfiles y tools del dominio a agentes CrewAI.
+- adapters `BaseTool` para `search_knowledge`, `create_incident`, `search_incidents` y `append_incident_note`.
+- crew jerárquica con `Process.hierarchical` y `manager_agent` personalizado.
+- CrewAI configurado con `memory=False` y `planning=False` para conservar la memoria y planificación propias de KnowledgeFlow.
 
 ### Próximos hitos
 
-- orquestación jerárquica con CrewAI;
 - trazabilidad visual de plan, herramientas, memoria y resultados;
 - escenarios end-to-end para la demo de EP2.
 
@@ -239,6 +242,33 @@ flowchart TD
 ---
 
 ## 7. Componentes principales
+
+### Integración CrewAI
+
+Ubicación:
+
+~~~text
+app/integrations/
+├── __init__.py
+├── crewai_adapter.py
+└── crewai_tools.py
+~~~
+
+Responsabilidades:
+
+- adaptar las tools tipadas de KnowledgeFlow al contrato `BaseTool` de CrewAI;
+- construir Manager, Knowledge Agent y Operations Agent a partir de los perfiles ya definidos;
+- mantener al Manager sin herramientas operacionales;
+- construir una `Crew` con `Process.hierarchical` y `manager_agent` explícito;
+- mantener `memory=False` y `planning=False` dentro de CrewAI, porque memoria y planificación ya están implementadas y probadas en KnowledgeFlow;
+- permitir pruebas completamente offline mediante un `LLM` inyectado y doubles deterministas.
+
+Dependencias fijadas:
+
+~~~text
+crewai[google-genai]==1.15.22
+google-genai~=1.65.0
+~~~
 
 ### Roles de agentes
 
@@ -524,6 +554,10 @@ KnowledgeFlow-Agent/
 │   ├── core/
 │   │   └── config.py
 │   ├── evaluation/
+│   ├── integrations/
+│   │   ├── __init__.py
+│   │   ├── crewai_adapter.py
+│   │   └── crewai_tools.py
 │   ├── llm/
 │   ├── memory/
 │   │   ├── __init__.py
@@ -565,6 +599,7 @@ KnowledgeFlow-Agent/
 ├── scripts/
 ├── tests/
 │   ├── test_agent_roles.py
+│   ├── test_crewai_adapter.py
 │   ├── test_agent_state.py
 │   ├── test_incident_storage.py
 │   ├── test_incident_tools.py
@@ -693,8 +728,8 @@ pytest -q
 Estado actual:
 
 ~~~text
-217 passed
-1 warning de deprecación Starlette/FastAPI
+224 passed
+20 warnings de deprecación provenientes de FastAPI/Starlette y CrewAI
 ~~~
 
 El warning corresponde a la denominación de HTTP 422 utilizada por una dependencia y no representa una falla de la suite.
@@ -780,6 +815,15 @@ test_agent_roles.py
   - Operations Agent restringido a incident tools
   - creación y búsqueda mediante Operations Agent
   - seguimiento mediante Operations Agent
+
+test_crewai_adapter.py
+  - adaptación de KnowledgeRAGTool a BaseTool
+  - Manager CrewAI sin tools operacionales
+  - Knowledge Agent CrewAI restringido a search_knowledge
+  - Operations Agent CrewAI restringido a incident tools
+  - ejecución real de lógica de dominio a través de adapters
+  - Task con expected_output explícito
+  - construcción de Crew jerárquica con manager_agent
 ~~~
 
 ---
@@ -807,13 +851,13 @@ Controles presentes o planificados:
 |---|---|---|
 | Herramientas de consulta | KnowledgeRAGTool / search_knowledge | Implementado |
 | Herramientas de escritura | create_incident / search_incidents / append_incident_note | Implementado |
-| Framework agentic | roles desacoplados preparados para adaptación CrewAI | Parcial |
+| Framework agentic | CrewAI 1.15.22 + adapters + Process.hierarchical | Implementado |
 | Memoria de contenido | ShortTermMemory + LongTermMemoryStore | Implementado |
 | Recuperación semántica de contexto | RAG + SemanticMemory por similitud coseno | Implementado |
 | Planificación | RuleBasedPlanner + AgentState + selección de tools | Implementado |
 | Decisiones adaptativas | abstención, aclaración y bloqueo de escrituras según observaciones | Implementado |
 | README y arquitectura | este documento + documentación heredada | En progreso |
-| Pruebas | 217 pruebas offline | Implementado |
+| Pruebas | 224 pruebas offline | Implementado |
 | Demo agentic end-to-end | escenarios definidos | Pendiente |
 
 Esta tabla se actualizará a medida que los hitos de EP2 se completen.
@@ -850,9 +894,12 @@ Esta tabla se actualizará a medida que los hitos de EP2 se completen.
 [✓] Operations Agent
 [✓] separación de responsabilidades por tools
 [✓] 217 pruebas verdes
+[✓] CrewAI 1.15.22
+[✓] adapters BaseTool
+[✓] CrewAIAdapter
+[✓] orquestación jerárquica construida offline
+[✓] 224 pruebas verdes
 
-[ ] CrewAI
-[ ] orquestación jerárquica
 [ ] decisiones adaptativas end-to-end
 [ ] UI agentic / trace
 [ ] evidencia de demo
@@ -904,6 +951,10 @@ Estos documentos corresponden a la etapa RAG y serán complementados con documen
 
 **Roles Manager/Knowledge/Operations:** 61a04da
 
-**Suite actual:** 217 pruebas aprobadas.
+**CrewAI y compatibilidad Gemini:** 5017427
 
-El siguiente hito técnico es integrar CrewAI de forma controlada sobre los perfiles y componentes ya probados, manteniendo la lógica de dominio independiente del framework.
+**Adapters jerárquicos CrewAI:** dda00a9
+
+**Suite actual:** 224 pruebas aprobadas.
+
+El siguiente hito técnico es ejecutar un smoke test controlado con Gemini real para verificar que la crew jerárquica puede arrancar y delegar sin romper las restricciones de herramientas.
