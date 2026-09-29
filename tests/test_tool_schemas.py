@@ -9,6 +9,7 @@ from app.storage.models import (
     IncidentStatus,
 )
 from app.tools.schemas import (
+    AppendIncidentNoteDraft,
     AppendIncidentNoteInput,
     CreateIncidentInput,
     SearchIncidentsInput,
@@ -66,4 +67,20 @@ def test_append_incident_note_rejects_blank_note():
         AppendIncidentNoteInput(
             incident_id="INC-00001",
             note="   ",
+        )
+
+
+def test_append_incident_note_draft_allows_memory_resolved_incident():
+    payload = AppendIncidentNoteDraft(
+        note="Identidad del usuario validada."
+    )
+
+    assert payload.incident_id is None
+    assert payload.note == "Identidad del usuario validada."
+
+
+def test_append_incident_note_draft_rejects_blank_note():
+    with pytest.raises(ValidationError):
+        AppendIncidentNoteDraft(
+            note="   "
         )
