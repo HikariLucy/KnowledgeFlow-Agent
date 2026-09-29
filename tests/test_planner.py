@@ -1,5 +1,6 @@
 """Tests for deterministic KnowledgeFlow planning."""
 
+from datetime import datetime, timezone
 from types import SimpleNamespace
 
 from app.agentic.planner import (
@@ -226,3 +227,72 @@ def test_planner_uses_incident_memory_for_natural_follow_up():
         "append_incident_note",
     ]
     assert decision.requires_clarification is False
+
+
+def test_planner_prefers_most_recent_short_term_incident():
+    planner = RuleBasedPlanner()
+
+    state = _state(
+        "Agrega que la identidad ya fue validada."
+    )
+
+    state.memory_context = [
+        {
+            "memory_kind": "short_term",
+            "role": "assistant",
+            "content": "Incidente creado: INC-00001.",
+        },
+        {
+            "memory_kind": "short_term",
+            "role": "assistant",
+            "content": "Incidente creado: INC-00002.",
+        },
+    ]
+
+    decision = planner.plan(state)
+
+    assert decision.intent == PlanningIntent.INCIDENT_NOTE
+    assert decision.incident_id == "INC-00002"
+
+
+def test_planner_prefers_newest_long_term_incident_over_higher_similarity():
+    older_memory = SimpleNamespace(
+        public_id="MEM-00001",
+        memory_type=SimpleNamespace(value="tool_result"),
+        content="Se creó el incidente INC-00001 por pérdida de MFA.",
+        metadata={"incident_id": "INC-00001"},
+        created_at=datetime(2026, 9, 29, 10, 0, tzinfo=timezone.utc),
+    )
+    newer_memory = SimpleNamespace(
+        public_id="MEM-00002",
+        memory_type=SimpleNamespace(value="tool_result"),
+        content="Se creó el incidente INC-00002 por pérdida de MFA.",
+        metadata={"incident_id": "INC-00002"},
+        created_at=datetime(2026, 9, 29, 10, 5, tzinfo=timezone.utc),
+    )
+
+    semantic_memory = SimpleNamespace(
+        search=lambda **kwargs: [
+            SimpleNamespace(
+                memory=older_memory,
+                score=0.95,
+            ),
+            SimpleNamespace(
+                memory=newer_memory,
+                score=0.70,
+            ),
+        ]
+    )
+
+    planner = RuleBasedPlanner(
+        semantic_memory=semantic_memory
+    )
+
+    decision = planner.plan(
+        _state(
+            "Agrega que la identidad ya fue validada."
+        )
+    )
+
+    assert decision.intent == PlanningIntent.INCIDENT_NOTE
+    assert decision.incident_id == "INC-00002"
