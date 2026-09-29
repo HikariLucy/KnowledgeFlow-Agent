@@ -193,3 +193,33 @@ def test_agent_service_maps_orchestration_state_to_response():
     assert response.memory_context[0]["content"] == "Contexto previo."
     assert response.sources[0]["file_name"] == "faq_interna.txt"
     assert response.output == "Respuesta [S1]."
+
+
+def test_agent_api_accepts_followup_without_incident_id():
+    service = FakeAgentService()
+    app.dependency_overrides[get_agent_service] = lambda: service
+
+    client = TestClient(app)
+
+    try:
+        response = client.post(
+            "/api/agent",
+            json={
+                "conversation_id": "demo-memory",
+                "message": "Agrega que la identidad ya fue validada.",
+                "append_incident_note": {
+                    "note": "Identidad del usuario validada."
+                },
+            },
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert len(service.requests) == 1
+
+    draft = service.requests[0].append_incident_note
+
+    assert draft is not None
+    assert draft.incident_id is None
+    assert draft.note == "Identidad del usuario validada."
