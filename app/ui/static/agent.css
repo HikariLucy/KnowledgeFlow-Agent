@@ -328,3 +328,34 @@
     width: 100%;
   }
 }
+
+
+.agent-next-actions {
+  margin-top: 24px;
+  padding-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid var(--rule-strong);
+}
+
+.agent-next-actions p {
+  margin: 6px 0 0;
+  color: var(--graphite-3);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.agent-next-kicker {
+  color: var(--ink-blue);
+  font: 700 8.5px/1 var(--font-mono);
+  letter-spacing: .09em;
+}
+
+@media (max-width: 640px) {
+  .agent-next-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
