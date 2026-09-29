@@ -6,6 +6,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import router as api_router
+from app.api.agent_routes import router as agent_router
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -23,6 +24,7 @@ if UI_STATIC_DIR.exists():
 
 # Register API routes
 app.include_router(api_router)
+app.include_router(agent_router)
 
 
 @app.get("/", tags=["UI"], include_in_schema=False)
