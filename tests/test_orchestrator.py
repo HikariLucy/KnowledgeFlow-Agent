@@ -197,6 +197,10 @@ def test_orchestrator_creates_incident_after_grounded_knowledge(
         "create_incident",
     ]
     assert result.state.incident_id == "INC-00001"
+    assert result.output == (
+        "Procedimiento recuperado [S1].\n\n"
+        "Incidente creado: INC-00001."
+    )
 
     assert (
         "Validar información mínima del incidente"
