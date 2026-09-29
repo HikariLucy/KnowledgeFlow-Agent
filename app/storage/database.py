@@ -5,11 +5,7 @@ from pathlib import Path
 
 
 class SQLiteDatabase:
-    """Minimal SQLite database wrapper.
-
-    SQLite is used for operational persistence in EP2 while keeping the
-    solution lightweight and reproducible for evaluation and demo purposes.
-    """
+    """Minimal SQLite database wrapper for operational and memory persistence."""
 
     def __init__(self, path: str | Path = "data/knowledgeflow-agent.db") -> None:
         self.path = Path(path)
@@ -25,7 +21,7 @@ class SQLiteDatabase:
         return connection
 
     def initialize(self) -> None:
-        """Create the operational schema if it does not already exist."""
+        """Create the application schema if it does not already exist."""
         with self.connect() as connection:
             connection.executescript(
                 """
@@ -62,5 +58,22 @@ class SQLiteDatabase:
 
                 CREATE INDEX IF NOT EXISTS idx_incident_notes_incident_id
                     ON incident_notes(incident_id);
+
+                CREATE TABLE IF NOT EXISTS memory_records (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    public_id TEXT UNIQUE,
+                    conversation_id TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    memory_type TEXT NOT NULL,
+                    metadata_json TEXT NOT NULL,
+                    embedding_json TEXT,
+                    created_at TEXT NOT NULL
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_memory_conversation
+                    ON memory_records(conversation_id);
+
+                CREATE INDEX IF NOT EXISTS idx_memory_type
+                    ON memory_records(memory_type);
                 """
             )
