@@ -2,7 +2,7 @@
 
 Agente inteligente organizacional desarrollado para **ISY0101 - Ingeniería de Soluciones con IA (Evaluación Parcial N°2)**. El proyecto evoluciona directamente desde **KnowledgeFlow RAG**, reutilizando el motor RAG de la EP1 como una herramienta de consulta dentro de una arquitectura agentic con estado, persistencia, herramientas tipadas, memoria y planificación adaptativa.
 
-> **Estado actual:** fundación EP2 en desarrollo sobre la rama feat/ep2-agent-foundation. La base heredada de EP1 se mantiene funcional y la suite completa suma actualmente **179 pruebas automatizadas offline**.
+> **Estado actual:** fundación EP2 en desarrollo sobre la rama feat/ep2-agent-foundation. La base heredada de EP1 se mantiene funcional y la suite completa suma actualmente **184 pruebas automatizadas offline**.
 
 ---
 
@@ -114,10 +114,11 @@ La solución se diseña de forma modular para que cada capacidad pueda probarse 
 - validación de categorías, severidades, estados, límites y campos obligatorios.
 - **KnowledgeRAGTool**, que expone el RAG de EP1 como herramienta agentic.
 - preservación explícita de abstención, citas y fuentes al atravesar la frontera RAG → Tool.
+- **IncidentTools ejecutables** para `create_incident`, `search_incidents` y `append_incident_note`.
+- separación explícita entre consulta documental y escritura operacional.
 
 ### Próximos hitos
 
-- wrappers ejecutables para create_incident, search_incidents y append_incident_note;
 - memoria conversacional de corto plazo;
 - memoria persistente y recuperación semántica;
 - planner;
@@ -152,8 +153,15 @@ flowchart TD
     TS --> SI[SearchIncidentsInput]
     TS --> AN[AppendIncidentNoteInput]
 
+    CI --> CIT[CreateIncidentTool]
+    SI --> SIT[SearchIncidentsTool]
+    AN --> NIT[AppendIncidentNoteTool]
+
     DB[(SQLite)]
-    IR[IncidentRepository] --> DB
+    CIT --> IR[IncidentRepository]
+    SIT --> IR
+    NIT --> IR
+    IR --> DB
     IR --> INC[Incidents]
     IR --> NOTES[Incident Notes]
 
@@ -167,7 +175,8 @@ La arquitectura actual separa deliberadamente:
 - **RAG**: conocimiento documental.
 - **Estado**: información activa de una ejecución.
 - **Persistencia operacional**: incidentes y notas.
-- **Schemas de tools**: frontera validada para futuras llamadas de herramientas.
+- **Schemas de tools**: frontera validada para llamadas de herramientas.
+- **IncidentTools**: operaciones ejecutables de creación, búsqueda y seguimiento sobre SQLite.
 - **Orquestación**: capa aún en construcción.
 
 ---
@@ -294,6 +303,22 @@ Actualmente se definen contratos tipados para:
 
 Estos modelos funcionan como frontera de validación antes de que los argumentos lleguen a herramientas de lectura o escritura.
 
+### IncidentTools
+
+Ubicación:
+
+~~~text
+app/tools/incidents.py
+~~~
+
+Herramientas disponibles:
+
+- `create_incident`: crea un incidente validado y devuelve su identificador público `INC-xxxxx`.
+- `search_incidents`: recupera incidentes por texto, identificador o estado.
+- `append_incident_note`: agrega seguimiento a un incidente existente sin sobrescribir su historial.
+
+Las tres herramientas reutilizan `IncidentRepository`, por lo que la capa agentic no ejecuta SQL directamente.
+
 ### KnowledgeRAGTool
 
 Ubicación:
@@ -411,6 +436,7 @@ KnowledgeFlow-Agent/
 │   │   └── repositories.py
 │   ├── tools/
 │   │   ├── __init__.py
+│   │   ├── incidents.py
 │   │   ├── knowledge.py
 │   │   └── schemas.py
 │   ├── ui/
@@ -424,6 +450,7 @@ KnowledgeFlow-Agent/
 ├── tests/
 │   ├── test_agent_state.py
 │   ├── test_incident_storage.py
+│   ├── test_incident_tools.py
 │   ├── test_knowledge_tool.py
 │   ├── test_tool_schemas.py
 │   └── ... pruebas heredadas de EP1
@@ -544,7 +571,7 @@ pytest -q
 Estado actual:
 
 ~~~text
-179 passed
+184 passed
 1 warning de deprecación Starlette/FastAPI
 ~~~
 
@@ -579,6 +606,13 @@ test_knowledge_tool.py
   - abstención controlada
   - validación de query y top_k
   - integración offline con RAGPipeline
+
+test_incident_tools.py
+  - creación real de incidentes desde una tool
+  - búsqueda de incidentes
+  - filtrado por estado
+  - persistencia de notas de seguimiento
+  - rechazo controlado de incidentes inexistentes
 ~~~
 
 ---
@@ -605,14 +639,14 @@ Controles presentes o planificados:
 | Área | Evidencia actual | Estado |
 |---|---|---|
 | Herramientas de consulta | KnowledgeRAGTool / search_knowledge | Implementado |
-| Herramientas de escritura | dominio + repositorio + schemas de incidentes | Base implementada |
+| Herramientas de escritura | create_incident / search_incidents / append_incident_note | Implementado |
 | Framework agentic | diseño modular preparado para CrewAI | Pendiente |
 | Memoria de contenido | separación de estado preparada | Pendiente |
 | Recuperación semántica de contexto | RAG disponible; memoria semántica aún pendiente | Parcial |
 | Planificación | AgentState y límite de iteraciones | Base implementada |
 | Decisiones adaptativas | abstención RAG disponible | Parcial |
 | README y arquitectura | este documento + documentación heredada | En progreso |
-| Pruebas | 179 pruebas offline | Implementado |
+| Pruebas | 184 pruebas offline | Implementado |
 | Demo agentic end-to-end | escenarios definidos | Pendiente |
 
 Esta tabla se actualizará a medida que los hitos de EP2 se completen.
@@ -633,8 +667,9 @@ Esta tabla se actualizará a medida que los hitos de EP2 se completen.
 [✓] KnowledgeRAGTool
 [✓] integración offline EP1 → EP2
 [✓] 179 pruebas verdes
+[✓] IncidentTools ejecutables
+[✓] 184 pruebas verdes
 
-[ ] IncidentTools ejecutables
 [ ] short-term memory
 [ ] long-term memory
 [ ] recuperación semántica de memoria
@@ -685,6 +720,8 @@ Estos documentos corresponden a la etapa RAG y serán complementados con documen
 
 **RAG expuesto como herramienta agentic:** f2fb796
 
-**Suite actual:** 179 pruebas aprobadas.
+**IncidentTools ejecutables:** d3eaf25
 
-El siguiente hito técnico es convertir la persistencia de incidentes en herramientas ejecutables y, posteriormente, incorporar memoria y orquestación.
+**Suite actual:** 184 pruebas aprobadas.
+
+El siguiente hito técnico es incorporar memoria de corto plazo y memoria persistente, para luego avanzar hacia recuperación semántica de contexto y orquestación.
