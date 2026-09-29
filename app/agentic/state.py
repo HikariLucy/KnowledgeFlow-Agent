@@ -18,6 +18,7 @@ class AgentState(BaseModel):
 
     intent: str | None = None
     plan: list[str] = Field(default_factory=list)
+    required_tools: list[str] = Field(default_factory=list)
 
     retrieved_context: list[dict[str, Any]] = Field(default_factory=list)
     memory_context: list[dict[str, Any]] = Field(default_factory=list)
@@ -30,6 +31,7 @@ class AgentState(BaseModel):
 
     completed_steps: list[str] = Field(default_factory=list)
     requires_clarification: bool = False
+    clarification_question: str | None = None
 
     iteration_count: int = Field(default=0, ge=0)
     max_iterations: int = Field(default=6, ge=1)
