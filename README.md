@@ -2,7 +2,7 @@
 
 Agente inteligente organizacional desarrollado para **ISY0101 - Ingeniería de Soluciones con IA (Evaluación Parcial N°2)**. El proyecto evoluciona directamente desde **KnowledgeFlow RAG**, reutilizando el motor RAG de la EP1 como una herramienta de consulta dentro de una arquitectura agentic con estado, persistencia, herramientas tipadas, memoria y planificación adaptativa.
 
-> **Estado actual:** fundación EP2 en desarrollo sobre la rama feat/ep2-agent-foundation. La base heredada de EP1 se mantiene funcional y la suite completa suma actualmente **195 pruebas automatizadas offline**.
+> **Estado actual:** fundación EP2 en desarrollo sobre la rama feat/ep2-agent-foundation. La base heredada de EP1 se mantiene funcional y la suite completa suma actualmente **203 pruebas automatizadas offline**.
 
 ---
 
@@ -119,10 +119,12 @@ La solución se diseña de forma modular para que cada capacidad pueda probarse 
 - **ShortTermMemory** con ventana configurable de conversación reciente.
 - **LongTermMemoryStore** persistente sobre SQLite.
 - **SemanticMemory** para recuperar memorias relevantes mediante similitud coseno.
+- **RuleBasedPlanner** determinista y consciente de memoria para clasificar intención, generar planes y seleccionar herramientas.
+- resolución de `incident_id` desde la solicitud, el estado o memorias recuperadas.
+- aclaración adaptativa cuando una operación requiere contexto que aún no está disponible.
 
 ### Próximos hitos
 
-- planner;
 - Manager Agent;
 - Knowledge Agent;
 - Operations Agent;
@@ -137,7 +139,8 @@ La solución se diseña de forma modular para que cada capacidad pueda probarse 
 
 ~~~mermaid
 flowchart TD
-    U[Usuario] --> AS[AgentState]
+    U[Usuario] --> P[RuleBasedPlanner]
+    P --> AS[AgentState]
 
     AS --> KQT[KnowledgeQueryInput]
     KQT --> KRT[KnowledgeRAGTool]
@@ -170,8 +173,10 @@ flowchart TD
     INC --> AS
     NOTES --> AS
 
-    AS --> STM[ShortTermMemory]
-    AS --> SM[SemanticMemory]
+    P --> STM[ShortTermMemory]
+    P --> SM[SemanticMemory]
+    STM --> AS
+    SM --> AS
     SM --> LTM[LongTermMemoryStore]
     LTM --> DB
 ~~~
@@ -184,6 +189,7 @@ La arquitectura actual separa deliberadamente:
 - **Schemas de tools**: frontera validada para llamadas de herramientas.
 - **IncidentTools**: operaciones ejecutables de creación, búsqueda y seguimiento sobre SQLite.
 - **Memoria**: ventana reciente en memoria y almacenamiento persistente con recuperación semántica.
+- **Planner**: clasificación determinista de intención, secuencia de pasos, selección de tools y detección de aclaraciones.
 - **Orquestación**: capa aún en construcción.
 
 ---
@@ -227,6 +233,26 @@ flowchart TD
 ---
 
 ## 7. Componentes principales
+
+### RuleBasedPlanner
+
+Ubicación:
+
+~~~text
+app/agentic/planner.py
+~~~
+
+Responsabilidades actuales:
+
+- clasificar solicitudes en `knowledge_query`, `incident_create`, `incident_search` o `incident_note`;
+- hidratar `AgentState.memory_context` desde memoria de corto plazo y memoria semántica;
+- conservar contexto previamente inyectado por otros componentes;
+- resolver `INC-xxxxx` desde la solicitud, estado o memoria;
+- generar una secuencia explícita de pasos y tools requeridas;
+- marcar `requires_clarification` cuando falta información indispensable;
+- incrementar y respetar el contador de iteraciones de `AgentState`.
+
+El planner expone únicamente un plan operacional estructurado; no expone razonamiento privado del modelo.
 
 ### AgentState
 
@@ -437,6 +463,7 @@ KnowledgeFlow-Agent/
 ├── app/
 │   ├── agentic/
 │   │   ├── __init__.py
+│   │   ├── planner.py
 │   │   └── state.py
 │   ├── agents/
 │   │   ├── __init__.py
@@ -491,6 +518,7 @@ KnowledgeFlow-Agent/
 │   ├── test_incident_tools.py
 │   ├── test_knowledge_tool.py
 │   ├── test_long_term_memory.py
+│   ├── test_planner.py
 │   ├── test_semantic_memory.py
 │   ├── test_short_term_memory.py
 │   ├── test_tool_schemas.py
@@ -612,7 +640,7 @@ pytest -q
 Estado actual:
 
 ~~~text
-195 passed
+203 passed
 1 warning de deprecación Starlette/FastAPI
 ~~~
 
@@ -671,6 +699,16 @@ test_semantic_memory.py
   - persistencia de embeddings
   - ranking por similitud
   - filtrado por conversación
+
+test_planner.py
+  - consulta general → search_knowledge
+  - creación de incidente → plan multietapa
+  - búsqueda de incidentes
+  - notas con identificador explícito
+  - aclaración cuando falta incident_id
+  - reutilización de memory_context preexistente
+  - hidratación de short-term memory
+  - recuperación semántica y reutilización de incident_id
 ~~~
 
 ---
@@ -701,10 +739,10 @@ Controles presentes o planificados:
 | Framework agentic | diseño modular preparado para CrewAI | Pendiente |
 | Memoria de contenido | ShortTermMemory + LongTermMemoryStore | Implementado |
 | Recuperación semántica de contexto | RAG + SemanticMemory por similitud coseno | Implementado |
-| Planificación | AgentState y límite de iteraciones | Base implementada |
-| Decisiones adaptativas | abstención RAG disponible | Parcial |
+| Planificación | RuleBasedPlanner + AgentState + selección de tools | Implementado |
+| Decisiones adaptativas | abstención RAG + aclaración según contexto/memoria | Parcial |
 | README y arquitectura | este documento + documentación heredada | En progreso |
-| Pruebas | 195 pruebas offline | Implementado |
+| Pruebas | 203 pruebas offline | Implementado |
 | Demo agentic end-to-end | escenarios definidos | Pendiente |
 
 Esta tabla se actualizará a medida que los hitos de EP2 se completen.
@@ -731,8 +769,9 @@ Esta tabla se actualizará a medida que los hitos de EP2 se completen.
 [✓] long-term memory
 [✓] recuperación semántica de memoria
 [✓] 195 pruebas verdes
+[✓] planner determinista consciente de memoria
+[✓] 203 pruebas verdes
 
-[ ] planner
 [ ] CrewAI
 [ ] Manager Agent
 [ ] Knowledge Agent
@@ -783,6 +822,8 @@ Estos documentos corresponden a la etapa RAG y serán complementados con documen
 
 **Memoria de corto/largo plazo y recuperación semántica:** cfcfea8
 
-**Suite actual:** 195 pruebas aprobadas.
+**Planner determinista consciente de memoria:** eef07f3
 
-El siguiente hito técnico es conectar memoria y estado al planner, para luego avanzar hacia decisiones adaptativas y orquestación.
+**Suite actual:** 203 pruebas aprobadas.
+
+El siguiente hito técnico es implementar un orquestador adaptativo que ejecute el plan, registre observaciones y detenga operaciones de escritura cuando la evidencia o el contexto no sean suficientes.
