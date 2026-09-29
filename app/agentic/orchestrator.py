@@ -14,6 +14,7 @@ from app.tools.incidents import (
 )
 from app.tools.knowledge import KnowledgeRAGTool
 from app.tools.schemas import (
+    AppendIncidentNoteDraft,
     AppendIncidentNoteInput,
     CreateIncidentInput,
     KnowledgeQueryInput,
