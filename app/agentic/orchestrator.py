@@ -275,10 +275,18 @@ class AdaptiveOrchestrator:
                     "Crear incidente"
                 )
 
-                output = (
+                incident_message = (
                     f"Incidente creado: "
                     f"{incident.public_id}."
                 )
+
+                if output:
+                    output = (
+                        f"{output}\n\n"
+                        f"{incident_message}"
+                    )
+                else:
+                    output = incident_message
 
             elif tool_name == "search_incidents":
                 if self.search_incidents_tool is None:
