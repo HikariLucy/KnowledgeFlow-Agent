@@ -134,10 +134,11 @@ La solución se diseña de forma modular para que cada capacidad pueda probarse 
 - smoke test en vivo con Gemini `gemini-3.5-flash-lite`: delegación jerárquica real al Knowledge Agent, tres invocaciones de `search_knowledge` y cero escrituras operacionales.
 - RAG real reconstruido localmente con 8 documentos, 47 chunks y embeddings `gemini-embedding-2` de 768 dimensiones.
 - consulta RAG real validada: recuperación de `faq_interna.txt`, respuesta grounded, cita `S1` y `abstained=False` para el caso MFA.
+- E2E live CrewAI + RAG real validado: el Manager jerárquico delegó al Knowledge Agent, `KnowledgeRAGTool` ejecutó FAISS/Gemini real, se conservaron fuentes/citas y no hubo escrituras operacionales.
 
 ### Próximos hitos
 
-- validar CrewAI + `KnowledgeRAGTool` + RAG real end-to-end;
+- integrar write-back de memoria tras ejecuciones exitosas;
 - trazabilidad visual de plan, herramientas, memoria y resultados;
 - escenarios end-to-end para la demo de EP2.
 
@@ -282,6 +283,17 @@ process: Process.hierarchical
 manager tools: []
 workers: Knowledge Agent, Operations Agent
 search_knowledge calls: 3
+incidents created: 0
+resultado: PASS
+~~~
+
+E2E CrewAI + RAG real validado:
+
+~~~text
+knowledge calls: 2
+non-abstained RAG results: 2
+sources: faq_interna.txt, politica_accesos.md, procedimiento_incidentes.md
+citations: S1
 incidents created: 0
 resultado: PASS
 ~~~
@@ -876,7 +888,7 @@ Controles presentes o planificados:
 | Decisiones adaptativas | abstención, aclaración y bloqueo de escrituras según observaciones | Implementado |
 | README y arquitectura | este documento + documentación heredada | En progreso |
 | Pruebas | 224 pruebas offline | Implementado |
-| Demo agentic end-to-end | smoke live jerárquico + RAG real validado de forma aislada | Parcial |
+| Demo agentic end-to-end | CrewAI jerárquico + KnowledgeRAGTool + FAISS/Gemini real | Implementado para consulta read-only |
 
 Esta tabla se actualizará a medida que los hitos de EP2 se completen.
 
@@ -923,7 +935,8 @@ Esta tabla se actualizará a medida que los hitos de EP2 se completen.
 
 [✓] RAG real: 8 documentos / 47 chunks / FAISS
 [✓] consulta real MFA con fuente y cita
-[ ] RAG real dentro de CrewAI
+[✓] RAG real dentro de CrewAI
+[✓] E2E read-only con fuentes/citas y cero escrituras
 [ ] decisiones adaptativas end-to-end
 [ ] UI agentic / trace
 [ ] evidencia de demo
@@ -985,4 +998,6 @@ Estos documentos corresponden a la etapa RAG y serán complementados con documen
 
 **Smoke RAG real:** PASS con 47 vectores FAISS; la consulta MFA recuperó `faq_interna.txt`, obtuvo `abstained=False` y cita `S1`.
 
-El siguiente hito técnico es conectar ese `KnowledgeRAGTool` real a la crew jerárquica y verificar el flujo completo CrewAI → RAG → fuentes/citas.
+**E2E CrewAI + RAG real:** PASS; dos consultas RAG no abstuvieron, se recuperaron fuentes internas con cita `S1` y no se creó ningún incidente.
+
+El siguiente hito técnico es implementar write-back de memoria para que los resultados y acciones relevantes de una ejecución puedan reutilizarse en turnos posteriores.
