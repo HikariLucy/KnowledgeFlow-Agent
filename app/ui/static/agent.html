@@ -137,7 +137,7 @@
             <span class="btn-index" aria-hidden="true">01</span>
             <span>Ejecutar agente</span>
           </button>
-          <button type="button" id="load-demo-btn" class="workbench-btn-secondary">Cargar demo MFA</button>
+          <button type="button" id="load-demo-btn" class="workbench-btn-secondary">Cargar creación MFA</button>
         </div>
       </form>
     </section>
@@ -197,6 +197,15 @@
           </div>
           <div class="agent-output-body">
             <p id="agent-output"></p>
+            <div id="result-next-actions" class="agent-next-actions hidden">
+              <div>
+                <span class="agent-next-kicker">SIGUIENTE TURNO</span>
+                <p id="followup-hint">Continúa sobre el incidente recién creado sin cambiar de conversación.</p>
+              </div>
+              <button id="prepare-followup-btn" type="button" class="workbench-btn-secondary">
+                Continuar con seguimiento
+              </button>
+            </div>
           </div>
         </article>
 
