@@ -16,6 +16,7 @@ from app.tools.incidents import (
     SearchIncidentsTool,
 )
 from app.tools.schemas import (
+    AppendIncidentNoteDraft,
     AppendIncidentNoteInput,
     CreateIncidentInput,
     KnowledgeQueryResult,
@@ -398,3 +399,39 @@ def test_orchestrator_requests_note_payload_when_missing(
         "search_incidents"
     ]
     assert result.state.requires_clarification is True
+
+
+def test_orchestrator_clarifies_followup_without_memory_instead_of_querying_rag(
+    operational_tools,
+):
+    knowledge = StubKnowledgeTool()
+
+    orchestrator = AdaptiveOrchestrator(
+        planner=RuleBasedPlanner(),
+        knowledge_tool=knowledge,
+        create_incident_tool=operational_tools["create"],
+        search_incidents_tool=operational_tools["search"],
+        append_incident_note_tool=operational_tools["append"],
+    )
+
+    result = orchestrator.execute(
+        _state(
+            "Agrega que la identidad ya fue validada."
+        ),
+        tool_inputs={
+            "append_incident_note": AppendIncidentNoteDraft(
+                note="Identidad del usuario validada."
+            )
+        },
+    )
+
+    assert (
+        result.status
+        == ExecutionStatus.NEEDS_CLARIFICATION
+    )
+    assert result.state.intent == "incident_note"
+    assert result.state.tool_calls == []
+    assert knowledge.calls == []
+    assert result.output == (
+        "¿A qué incidente deseas agregar el seguimiento?"
+    )
