@@ -6,16 +6,18 @@ This document records reproducible implementation evidence for the KnowledgeFlow
 
 ## Validated baseline
 
-Latest validated local suite:
+Latest fully validated local suite before the guided-follow-up UI test was added:
 
 ```text
-242 passed
+241 passed
 20 dependency deprecation warnings
 pip check: No broken requirements found
 compileall: OK
 git diff --check: OK
 working tree: clean
 ```
+
+One additional UI regression test was added afterwards, so the expected full-suite count is 242 pending a fresh local run.
 
 The warnings originate from FastAPI/Starlette and CrewAI deprecation notices and are not test failures.
 
