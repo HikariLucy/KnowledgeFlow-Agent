@@ -2,7 +2,7 @@
 
 Agente inteligente organizacional desarrollado para **ISY0101 - Ingeniería de Soluciones con IA (Evaluación Parcial N°2)**. El proyecto evoluciona directamente desde **KnowledgeFlow RAG**, reutilizando el motor RAG de la EP1 como una herramienta de consulta dentro de una arquitectura agentic con estado, persistencia, herramientas tipadas, memoria y planificación adaptativa.
 
-> **Estado actual:** fundación EP2 en desarrollo sobre la rama feat/ep2-agent-foundation. La base heredada de EP1 se mantiene funcional y la suite completa suma actualmente **203 pruebas automatizadas offline**.
+> **Estado actual:** fundación EP2 en desarrollo sobre la rama feat/ep2-agent-foundation. La base heredada de EP1 se mantiene funcional y la suite completa suma actualmente **211 pruebas automatizadas offline**.
 
 ---
 
@@ -122,6 +122,7 @@ La solución se diseña de forma modular para que cada capacidad pueda probarse 
 - **RuleBasedPlanner** determinista y consciente de memoria para clasificar intención, generar planes y seleccionar herramientas.
 - resolución de `incident_id` desde la solicitud, el estado o memorias recuperadas.
 - aclaración adaptativa cuando una operación requiere contexto que aún no está disponible.
+- **AdaptiveOrchestrator** para ejecutar planes, registrar observaciones y detener escrituras cuando falta evidencia o contexto.
 
 ### Próximos hitos
 
@@ -129,7 +130,6 @@ La solución se diseña de forma modular para que cada capacidad pueda probarse 
 - Knowledge Agent;
 - Operations Agent;
 - orquestación jerárquica con CrewAI;
-- decisiones adaptativas frente a información insuficiente;
 - trazabilidad visual de plan, herramientas, memoria y resultados;
 - escenarios end-to-end para la demo de EP2.
 
@@ -139,10 +139,12 @@ La solución se diseña de forma modular para que cada capacidad pueda probarse 
 
 ~~~mermaid
 flowchart TD
-    U[Usuario] --> P[RuleBasedPlanner]
+    U[Usuario] --> O[AdaptiveOrchestrator]
+    O --> P[RuleBasedPlanner]
     P --> AS[AgentState]
 
     AS --> KQT[KnowledgeQueryInput]
+    O --> KQT[KnowledgeQueryInput]
     KQT --> KRT[KnowledgeRAGTool]
 
     KRT --> RP[RAGPipeline EP1]
@@ -157,6 +159,9 @@ flowchart TD
     TS --> SI[SearchIncidentsInput]
     TS --> AN[AppendIncidentNoteInput]
 
+    O --> CI[CreateIncidentInput]
+    O --> SI[SearchIncidentsInput]
+    O --> AN[AppendIncidentNoteInput]
     CI --> CIT[CreateIncidentTool]
     SI --> SIT[SearchIncidentsTool]
     AN --> NIT[AppendIncidentNoteTool]
@@ -190,7 +195,7 @@ La arquitectura actual separa deliberadamente:
 - **IncidentTools**: operaciones ejecutables de creación, búsqueda y seguimiento sobre SQLite.
 - **Memoria**: ventana reciente en memoria y almacenamiento persistente con recuperación semántica.
 - **Planner**: clasificación determinista de intención, secuencia de pasos, selección de tools y detección de aclaraciones.
-- **Orquestación**: capa aún en construcción.
+- **Orquestación adaptativa**: ejecución secuencial, observaciones, abstención segura y bloqueo de escrituras ante contexto insuficiente.
 
 ---
 
@@ -233,6 +238,26 @@ flowchart TD
 ---
 
 ## 7. Componentes principales
+
+### AdaptiveOrchestrator
+
+Ubicación:
+
+~~~text
+app/agentic/orchestrator.py
+~~~
+
+Responsabilidades actuales:
+
+- ejecutar en orden las tools requeridas por el planner;
+- registrar llamadas y observaciones en `AgentState`;
+- detener el flujo cuando el RAG se abstiene;
+- impedir `create_incident` si no existen argumentos Pydantic validados;
+- validar la existencia de un incidente antes de agregar seguimiento;
+- solicitar aclaración cuando faltan datos o un identificador no es válido;
+- devolver estados controlados: `completed`, `needs_clarification`, `abstained` y `failed`.
+
+Este componente implementa adaptación observable: el plan inicial puede acortarse según los resultados de las tools.
 
 ### RuleBasedPlanner
 
@@ -463,6 +488,7 @@ KnowledgeFlow-Agent/
 ├── app/
 │   ├── agentic/
 │   │   ├── __init__.py
+│   │   ├── orchestrator.py
 │   │   ├── planner.py
 │   │   └── state.py
 │   ├── agents/
@@ -518,6 +544,7 @@ KnowledgeFlow-Agent/
 │   ├── test_incident_tools.py
 │   ├── test_knowledge_tool.py
 │   ├── test_long_term_memory.py
+│   ├── test_orchestrator.py
 │   ├── test_planner.py
 │   ├── test_semantic_memory.py
 │   ├── test_short_term_memory.py
@@ -640,7 +667,7 @@ pytest -q
 Estado actual:
 
 ~~~text
-203 passed
+211 passed
 1 warning de deprecación Starlette/FastAPI
 ~~~
 
@@ -709,6 +736,16 @@ test_planner.py
   - reutilización de memory_context preexistente
   - hidratación de short-term memory
   - recuperación semántica y reutilización de incident_id
+
+test_orchestrator.py
+  - consulta de conocimiento end-to-end controlada
+  - abstención RAG bloquea escrituras
+  - creación de incidente tras evidencia válida
+  - aclaración ante payload de escritura ausente
+  - búsqueda de incidentes
+  - seguimiento de incidente existente
+  - bloqueo ante incidente inexistente
+  - aclaración ante nota faltante
 ~~~
 
 ---
@@ -740,9 +777,9 @@ Controles presentes o planificados:
 | Memoria de contenido | ShortTermMemory + LongTermMemoryStore | Implementado |
 | Recuperación semántica de contexto | RAG + SemanticMemory por similitud coseno | Implementado |
 | Planificación | RuleBasedPlanner + AgentState + selección de tools | Implementado |
-| Decisiones adaptativas | abstención RAG + aclaración según contexto/memoria | Parcial |
+| Decisiones adaptativas | abstención, aclaración y bloqueo de escrituras según observaciones | Implementado |
 | README y arquitectura | este documento + documentación heredada | En progreso |
-| Pruebas | 203 pruebas offline | Implementado |
+| Pruebas | 211 pruebas offline | Implementado |
 | Demo agentic end-to-end | escenarios definidos | Pendiente |
 
 Esta tabla se actualizará a medida que los hitos de EP2 se completen.
@@ -771,6 +808,9 @@ Esta tabla se actualizará a medida que los hitos de EP2 se completen.
 [✓] 195 pruebas verdes
 [✓] planner determinista consciente de memoria
 [✓] 203 pruebas verdes
+[✓] orquestador adaptativo
+[✓] decisiones adaptativas end-to-end sobre tools locales
+[✓] 211 pruebas verdes
 
 [ ] CrewAI
 [ ] Manager Agent
@@ -824,6 +864,8 @@ Estos documentos corresponden a la etapa RAG y serán complementados con documen
 
 **Planner determinista consciente de memoria:** eef07f3
 
-**Suite actual:** 203 pruebas aprobadas.
+**Orquestador adaptativo:** c0ff5cd
 
-El siguiente hito técnico es implementar un orquestador adaptativo que ejecute el plan, registre observaciones y detenga operaciones de escritura cuando la evidencia o el contexto no sean suficientes.
+**Suite actual:** 211 pruebas aprobadas.
+
+El siguiente hito técnico es separar roles de Manager, Knowledge Agent y Operations Agent y luego integrar CrewAI sobre componentes ya probados.
