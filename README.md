@@ -2,7 +2,7 @@
 
 Agente inteligente organizacional desarrollado para **ISY0101 - Ingeniería de Soluciones con IA (Evaluación Parcial N°2)**. El proyecto evoluciona directamente desde **KnowledgeFlow RAG**, reutilizando el motor RAG de la EP1 como una herramienta de consulta dentro de una arquitectura agentic con estado, persistencia, herramientas tipadas, memoria y planificación adaptativa.
 
-> **Estado actual:** fundación EP2 en desarrollo sobre la rama feat/ep2-agent-foundation. La base heredada de EP1 se mantiene funcional y la suite completa suma actualmente **238 pruebas automatizadas offline**.
+> **Estado actual:** fundación EP2 en desarrollo sobre la rama feat/ep2-agent-foundation. La base heredada de EP1 se mantiene funcional y la suite completa suma actualmente **239 pruebas automatizadas offline**.
 
 ---
 
@@ -140,12 +140,15 @@ La solución se diseña de forma modular para que cada capacidad pueda probarse 
 - API agentic `POST /api/agent` implementada y validada en vivo con RAG real, trazabilidad de plan/tools, fuentes y observaciones estructuradas.
 - E2E live multi-turno de lectura + escritura validado: creación de `INC-00003`, persistencia en memoria y seguimiento posterior sin reenviar `incident_id`.
 - resolución de follow-ups endurecida para priorizar contexto explícito y el incidente más reciente frente al orden por similitud semántica.
+- UI agentic disponible en `GET /agent`, con selección de flujo, conversation_id persistente, plan, tools, memoria, fuentes, observaciones y JSON técnico.
+- validación visual live de creación de incidente desde la UI: `incident_create`, RAG real, `search_knowledge` + `create_incident`, cuatro fuentes y `INC-00004` creado correctamente.
+- el flujo de creación conserva ahora también la respuesta grounded del RAG junto con el identificador del incidente en la salida final.
 
 ### Próximos hitos
 
-- trazabilidad visual de plan, herramientas, memoria y resultados;
-- UI agentic para ejecutar consultas y operaciones multi-turno;
-- consolidar evidencia de demo para EP2.
+- validar visualmente el segundo turno de memoria desde la UI agentic;
+- consolidar evidencia de demo para EP2;
+- preparar documentación técnica y material de presentación.
 
 ---
 
@@ -782,7 +785,7 @@ pytest -q
 Estado actual:
 
 ~~~text
-238 passed
+239 passed
 20 warnings de deprecación provenientes de FastAPI/Starlette y CrewAI
 ~~~
 
@@ -918,7 +921,7 @@ Controles presentes o planificados:
 | Planificación | RuleBasedPlanner + AgentState + selección de tools | Implementado |
 | Decisiones adaptativas | abstención, aclaración y bloqueo de escrituras según observaciones | Implementado |
 | README y arquitectura | este documento + documentación heredada | En progreso |
-| Pruebas | 238 pruebas offline | Implementado |
+| Pruebas | 239 pruebas offline | Implementado |
 | Demo agentic end-to-end | API agentic multi-turno + RAG real + escritura + memoria; CrewAI read-only validado | Implementado |
 
 Esta tabla se actualizará a medida que los hitos de EP2 se completen.
@@ -980,7 +983,9 @@ Esta tabla se actualizará a medida que los hitos de EP2 se completen.
 [✓] selección del incidente más reciente en memoria
 [✓] E2E live lectura + escritura + memoria
 [✓] 238 pruebas verdes
-[ ] UI agentic / trace
+[✓] UI agentic / trace
+[✓] smoke visual live de creación de incidente
+[✓] 239 pruebas verdes
 [ ] evidencia de demo
 [ ] informe EP2
 [ ] presentación EP2
@@ -1034,7 +1039,7 @@ Estos documentos corresponden a la etapa RAG y serán complementados con documen
 
 **Adapters jerárquicos CrewAI:** dda00a9
 
-**Suite actual:** 238 pruebas aprobadas.
+**Suite actual:** 239 pruebas aprobadas.
 
 **Smoke live CrewAI:** PASS con `gemini-3.5-flash-lite`, delegación real a `search_knowledge` y cero escrituras operacionales.
 
@@ -1048,6 +1053,8 @@ Estos documentos corresponden a la etapa RAG y serán complementados con documen
 
 **E2E multi-turno live:** PASS; se creó `INC-00003` tras consultar RAG real y, en el turno siguiente de la misma conversación, la memoria recuperó `INC-00003` y `append_incident_note` agregó el seguimiento sin reenviar el identificador.
 
-**Validación local:** 238 pruebas aprobadas, `compileall` correcto, `pip check` sin dependencias rotas y `git diff --check` limpio.
+**UI agentic live:** PASS; `GET /agent` cargó correctamente y la ejecución visual de creación de incidente mostró intención, plan, tools, fuentes y observaciones coherentes con el backend.
 
-El siguiente hito técnico es conectar esta trazabilidad estructurada a una UI agentic de demostración, preservando la interfaz RAG heredada de EP1.
+**Validación local:** 239 pruebas aprobadas, `compileall` correcto, `pip check` sin dependencias rotas y `git diff --check` limpio.
+
+El siguiente hito técnico es validar en la misma UI el follow-up multi-turno basado en memoria y después consolidar la evidencia de demo.
