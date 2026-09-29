@@ -2,7 +2,7 @@
 
 Agente inteligente organizacional desarrollado para **ISY0101 - Ingeniería de Soluciones con IA (Evaluación Parcial N°2)**. El proyecto evoluciona directamente desde **KnowledgeFlow RAG**, reutilizando el motor RAG de la EP1 como una herramienta de consulta dentro de una arquitectura agentic con estado, persistencia, herramientas tipadas, memoria y planificación adaptativa.
 
-> **Estado actual:** fundación EP2 en desarrollo sobre la rama feat/ep2-agent-foundation. La base heredada de EP1 se mantiene funcional y la suite completa suma actualmente **211 pruebas automatizadas offline**.
+> **Estado actual:** fundación EP2 en desarrollo sobre la rama feat/ep2-agent-foundation. La base heredada de EP1 se mantiene funcional y la suite completa suma actualmente **217 pruebas automatizadas offline**.
 
 ---
 
@@ -123,12 +123,13 @@ La solución se diseña de forma modular para que cada capacidad pueda probarse 
 - resolución de `incident_id` desde la solicitud, el estado o memorias recuperadas.
 - aclaración adaptativa cuando una operación requiere contexto que aún no está disponible.
 - **AdaptiveOrchestrator** para ejecutar planes, registrar observaciones y detener escrituras cuando falta evidencia o contexto.
+- **ManagerAgent** sin herramientas operacionales, orientado a planificación y delegación.
+- **KnowledgeAgent** restringido a `search_knowledge`.
+- **OperationsAgent** restringido a creación, búsqueda y seguimiento de incidentes.
+- perfiles de agentes independientes del framework para facilitar la integración posterior con CrewAI.
 
 ### Próximos hitos
 
-- Manager Agent;
-- Knowledge Agent;
-- Operations Agent;
 - orquestación jerárquica con CrewAI;
 - trazabilidad visual de plan, herramientas, memoria y resultados;
 - escenarios end-to-end para la demo de EP2.
@@ -238,6 +239,26 @@ flowchart TD
 ---
 
 ## 7. Componentes principales
+
+### Roles de agentes
+
+Ubicación:
+
+~~~text
+app/agents/
+├── profile.py
+├── manager.py
+├── knowledge_agent.py
+└── operations_agent.py
+~~~
+
+Separación de responsabilidades:
+
+- `ManagerAgent`: planifica y delega; `tools=()` y `allow_delegation=True`.
+- `KnowledgeAgent`: solo puede consultar conocimiento mediante `search_knowledge`.
+- `OperationsAgent`: solo puede operar sobre incidentes mediante `create_incident`, `search_incidents` y `append_incident_note`.
+
+Los perfiles son independientes de CrewAI para conservar testabilidad y evitar acoplar la lógica de dominio al framework.
 
 ### AdaptiveOrchestrator
 
@@ -493,6 +514,10 @@ KnowledgeFlow-Agent/
 │   │   └── state.py
 │   ├── agents/
 │   │   ├── __init__.py
+│   │   ├── knowledge_agent.py
+│   │   ├── manager.py
+│   │   ├── operations_agent.py
+│   │   ├── profile.py
 │   │   └── source_router.py
 │   ├── api/
 │   │   └── routes.py
@@ -539,6 +564,7 @@ KnowledgeFlow-Agent/
 │   └── external/
 ├── scripts/
 ├── tests/
+│   ├── test_agent_roles.py
 │   ├── test_agent_state.py
 │   ├── test_incident_storage.py
 │   ├── test_incident_tools.py
@@ -667,7 +693,7 @@ pytest -q
 Estado actual:
 
 ~~~text
-211 passed
+217 passed
 1 warning de deprecación Starlette/FastAPI
 ~~~
 
@@ -746,6 +772,14 @@ test_orchestrator.py
   - seguimiento de incidente existente
   - bloqueo ante incidente inexistente
   - aclaración ante nota faltante
+
+test_agent_roles.py
+  - Manager sin tools y con delegación habilitada
+  - Manager devuelve plan sin ejecutar tools
+  - Knowledge Agent restringido a search_knowledge
+  - Operations Agent restringido a incident tools
+  - creación y búsqueda mediante Operations Agent
+  - seguimiento mediante Operations Agent
 ~~~
 
 ---
@@ -773,13 +807,13 @@ Controles presentes o planificados:
 |---|---|---|
 | Herramientas de consulta | KnowledgeRAGTool / search_knowledge | Implementado |
 | Herramientas de escritura | create_incident / search_incidents / append_incident_note | Implementado |
-| Framework agentic | diseño modular preparado para CrewAI | Pendiente |
+| Framework agentic | roles desacoplados preparados para adaptación CrewAI | Parcial |
 | Memoria de contenido | ShortTermMemory + LongTermMemoryStore | Implementado |
 | Recuperación semántica de contexto | RAG + SemanticMemory por similitud coseno | Implementado |
 | Planificación | RuleBasedPlanner + AgentState + selección de tools | Implementado |
 | Decisiones adaptativas | abstención, aclaración y bloqueo de escrituras según observaciones | Implementado |
 | README y arquitectura | este documento + documentación heredada | En progreso |
-| Pruebas | 211 pruebas offline | Implementado |
+| Pruebas | 217 pruebas offline | Implementado |
 | Demo agentic end-to-end | escenarios definidos | Pendiente |
 
 Esta tabla se actualizará a medida que los hitos de EP2 se completen.
@@ -811,11 +845,13 @@ Esta tabla se actualizará a medida que los hitos de EP2 se completen.
 [✓] orquestador adaptativo
 [✓] decisiones adaptativas end-to-end sobre tools locales
 [✓] 211 pruebas verdes
+[✓] Manager Agent
+[✓] Knowledge Agent
+[✓] Operations Agent
+[✓] separación de responsabilidades por tools
+[✓] 217 pruebas verdes
 
 [ ] CrewAI
-[ ] Manager Agent
-[ ] Knowledge Agent
-[ ] Operations Agent
 [ ] orquestación jerárquica
 [ ] decisiones adaptativas end-to-end
 [ ] UI agentic / trace
@@ -866,6 +902,8 @@ Estos documentos corresponden a la etapa RAG y serán complementados con documen
 
 **Orquestador adaptativo:** c0ff5cd
 
-**Suite actual:** 211 pruebas aprobadas.
+**Roles Manager/Knowledge/Operations:** 61a04da
 
-El siguiente hito técnico es separar roles de Manager, Knowledge Agent y Operations Agent y luego integrar CrewAI sobre componentes ya probados.
+**Suite actual:** 217 pruebas aprobadas.
+
+El siguiente hito técnico es integrar CrewAI de forma controlada sobre los perfiles y componentes ya probados, manteniendo la lógica de dominio independiente del framework.
