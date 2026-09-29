@@ -2,7 +2,7 @@
 
 Agente inteligente organizacional desarrollado para **ISY0101 - Ingeniería de Soluciones con IA (Evaluación Parcial N°2)**. El proyecto evoluciona directamente desde **KnowledgeFlow RAG**, reutilizando el motor RAG de la EP1 como una herramienta de consulta dentro de una arquitectura agentic con estado, persistencia, herramientas tipadas, memoria y planificación adaptativa.
 
-> **Estado actual:** fundación EP2 en desarrollo sobre la rama feat/ep2-agent-foundation. La base heredada de EP1 se mantiene funcional y la suite completa suma actualmente **242 pruebas automatizadas offline**.
+> **Estado actual:** fundación EP2 en desarrollo sobre la rama feat/ep2-agent-foundation. La base heredada de EP1 se mantiene funcional y la suite completa suma actualmente **241 pruebas automatizadas offline validadas; 242 esperadas tras el último test de UI**.
 
 ---
 
@@ -146,11 +146,12 @@ La solución se diseña de forma modular para que cada capacidad pueda probarse 
 - el planner usa payloads operacionales validados como hints de intención, evitando clasificar un follow-up de nota como consulta RAG cuando falta memoria.
 - un follow-up de `append_incident_note` sin contexto previo ahora solicita el `incident_id` en vez de ejecutar `search_knowledge` por error.
 - la UI agentic incorpora una acción guiada `Continuar seguimiento de INC-xxxxx` después de crear un incidente, conservando el mismo `conversation_id` y preparando el payload de seguimiento sin reenviar el ID.
+- validación visual multi-turno completada: `INC-00007` fue recuperado desde memoria y actualizado mediante `search_incidents` + `append_incident_note`, sin reenviar el identificador y sin ejecutar RAG en el segundo turno.
 
 ### Próximos hitos
 
-- validar visualmente el segundo turno de memoria desde la UI agentic;
 - consolidar evidencia de demo para EP2;
+- ejecutar la suite final tras el último cambio de UI;
 - preparar documentación técnica y material de presentación.
 
 ---
@@ -788,7 +789,8 @@ pytest -q
 Estado actual:
 
 ~~~text
-242 passed
+241 passed validadas
+242 expected tras el último test de UI
 20 warnings de deprecación provenientes de FastAPI/Starlette y CrewAI
 ~~~
 
@@ -924,7 +926,7 @@ Controles presentes o planificados:
 | Planificación | RuleBasedPlanner + AgentState + selección de tools | Implementado |
 | Decisiones adaptativas | abstención, aclaración y bloqueo de escrituras según observaciones | Implementado |
 | README y arquitectura | este documento + documentación heredada | En progreso |
-| Pruebas | 242 pruebas offline | Implementado |
+| Pruebas | 241 validadas; 242 esperadas tras el último test de UI | Implementado, validación final pendiente |
 | Demo agentic end-to-end | API agentic multi-turno + RAG real + escritura + memoria; CrewAI read-only validado | Implementado |
 
 Esta tabla se actualizará a medida que los hitos de EP2 se completen.
@@ -993,8 +995,8 @@ Esta tabla se actualizará a medida que los hitos de EP2 se completen.
 [✓] aclaración segura de follow-up sin memoria
 [✓] 241 pruebas verdes
 [✓] acción guiada UI para follow-up en memoria
-[✓] 242 pruebas verdes
-[ ] evidencia de demo
+[ ] 242 pruebas verdes — ejecutar suite final tras último cambio UI
+[✓] evidencia de demo multi-turno
 [ ] informe EP2
 [ ] presentación EP2
 ~~~
@@ -1047,7 +1049,7 @@ Estos documentos corresponden a la etapa RAG y serán complementados con documen
 
 **Adapters jerárquicos CrewAI:** dda00a9
 
-**Suite actual:** 242 pruebas aprobadas.
+**Suite validada:** 241 pruebas aprobadas; 242 esperadas tras el último test de UI.
 
 **Smoke live CrewAI:** PASS con `gemini-3.5-flash-lite`, delegación real a `search_knowledge` y cero escrituras operacionales.
 
@@ -1063,6 +1065,6 @@ Estos documentos corresponden a la etapa RAG y serán complementados con documen
 
 **UI agentic live:** PASS; `GET /agent` cargó correctamente y la ejecución visual de creación de incidente mostró intención, plan, tools, fuentes y observaciones coherentes con el backend.
 
-**Validación local:** 242 pruebas aprobadas tras incorporar la acción guiada de follow-up en la UI; `compileall`, `pip check` y `git diff --check` deben mantenerse verdes en la validación local.
+**Validación local previa al último test de UI:** 241 pruebas aprobadas, `compileall`, `pip check` y `git diff --check` verdes. Tras agregar la acción guiada se espera una suite de 242 pruebas; falta ejecutar la validación final local.
 
 El siguiente hito técnico es validar en la misma UI el follow-up multi-turno basado en memoria y después consolidar la evidencia de demo.
