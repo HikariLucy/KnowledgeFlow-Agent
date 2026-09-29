@@ -296,3 +296,23 @@ def test_planner_prefers_newest_long_term_incident_over_higher_similarity():
 
     assert decision.intent == PlanningIntent.INCIDENT_NOTE
     assert decision.incident_id == "INC-00002"
+
+
+def test_planner_uses_append_payload_as_incident_note_hint_without_memory():
+    planner = RuleBasedPlanner()
+
+    state = _state(
+        "Agrega que la identidad ya fue validada."
+    )
+
+    decision = planner.plan(
+        state,
+        requested_tools={"append_incident_note"},
+    )
+
+    assert decision.intent == PlanningIntent.INCIDENT_NOTE
+    assert decision.requires_clarification is True
+    assert decision.required_tools == []
+    assert decision.clarification_question == (
+        "¿A qué incidente deseas agregar el seguimiento?"
+    )
