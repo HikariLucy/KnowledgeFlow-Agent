@@ -13,7 +13,10 @@ faiss-cpu>=1.14.0
 numpy>=1.25.0
 
 # LLM Provider (Google Gemini decoupled client)
-google-genai>=0.1.0
+google-genai~=1.65.0
+
+# Agent Framework
+crewai[google-genai]==1.15.22
 
 # Testing & Quality
 pytest>=8.0.0
