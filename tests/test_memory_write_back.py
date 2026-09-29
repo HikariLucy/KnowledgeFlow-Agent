@@ -19,6 +19,7 @@ from app.tools.incidents import (
     SearchIncidentsTool,
 )
 from app.tools.schemas import (
+    AppendIncidentNoteDraft,
     AppendIncidentNoteInput,
     CreateIncidentInput,
     KnowledgeQueryResult,
@@ -227,8 +228,7 @@ def test_orchestrator_recovers_incident_from_semantic_memory_next_turn(tmp_path)
             "Agrega que la identidad ya fue validada."
         ),
         tool_inputs={
-            "append_incident_note": AppendIncidentNoteInput(
-                incident_id="INC-00001",
+            "append_incident_note": AppendIncidentNoteDraft(
                 note="Identidad del usuario validada.",
             )
         },
