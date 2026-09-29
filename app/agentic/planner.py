@@ -301,9 +301,29 @@ class RuleBasedPlanner:
 
         return PlanningIntent.KNOWLEDGE_QUERY
 
+    @staticmethod
+    def _intent_from_requested_tools(
+        requested_tools: set[str] | None,
+    ) -> PlanningIntent | None:
+        """Use explicit validated API/tool payloads as an intent hint."""
+        if not requested_tools:
+            return None
+
+        if "append_incident_note" in requested_tools:
+            return PlanningIntent.INCIDENT_NOTE
+
+        if "create_incident" in requested_tools:
+            return PlanningIntent.INCIDENT_CREATE
+
+        if "search_incidents" in requested_tools:
+            return PlanningIntent.INCIDENT_SEARCH
+
+        return None
+
     def plan(
         self,
         state: AgentState,
+        requested_tools: set[str] | None = None,
     ) -> PlanDecision:
         """Build and persist an operational plan for the current request."""
         state.register_iteration()
@@ -312,7 +332,11 @@ class RuleBasedPlanner:
 
         incident_id = self._find_incident_id(state)
 
-        intent = self._classify_intent(
+        hinted_intent = self._intent_from_requested_tools(
+            requested_tools
+        )
+
+        intent = hinted_intent or self._classify_intent(
             state.user_request,
             has_incident_context=incident_id is not None,
         )
