@@ -103,6 +103,18 @@ class RuleBasedPlanner:
                 )
 
                 for result in semantic_results:
+                    created_at = getattr(
+                        result.memory,
+                        "created_at",
+                        None,
+                    )
+
+                    if created_at is not None and hasattr(
+                        created_at,
+                        "isoformat",
+                    ):
+                        created_at = created_at.isoformat()
+
                     context.append(
                         {
                             "memory_kind": "long_term",
@@ -110,6 +122,7 @@ class RuleBasedPlanner:
                             "memory_type": result.memory.memory_type.value,
                             "content": result.memory.content,
                             "metadata": result.memory.metadata,
+                            "created_at": created_at,
                             "score": result.score,
                         }
                     )
@@ -124,11 +137,51 @@ class RuleBasedPlanner:
 
         state.memory_context = context
 
+    @classmethod
+    def _memory_incident_id(
+        cls,
+        memory: dict,
+    ) -> str | None:
+        """Extract an incident ID from one hydrated memory item."""
+        searchable = " ".join(
+            [
+                str(memory.get("content", "")),
+                str(memory.get("metadata", "")),
+            ]
+        )
+
+        match = cls.INCIDENT_ID_PATTERN.search(searchable)
+
+        if match:
+            return match.group(0).upper()
+
+        return None
+
+    @staticmethod
+    def _long_term_recency_key(
+        memory: dict,
+    ) -> tuple[str, str]:
+        """Prefer the newest persisted event over semantic-score order."""
+        return (
+            str(memory.get("created_at") or ""),
+            str(memory.get("memory_id") or ""),
+        )
+
     def _find_incident_id(
         self,
         state: AgentState,
     ) -> str | None:
-        """Resolve an incident ID from request, state or loaded memories."""
+        """Resolve an incident ID using explicit context before memory recency.
+
+        Resolution priority:
+        1. explicit ID in the current request;
+        2. ID already selected in AgentState;
+        3. most recent short-term conversational mention;
+        4. most recent persistent long-term memory.
+
+        This prevents a higher semantic-similarity score from selecting an
+        older incident when the user says "the incident" in a follow-up.
+        """
         match = self.INCIDENT_ID_PATTERN.search(
             state.user_request
         )
@@ -139,18 +192,43 @@ class RuleBasedPlanner:
         if state.incident_id:
             return state.incident_id.upper()
 
-        for memory in state.memory_context:
-            searchable = " ".join(
-                [
-                    str(memory.get("content", "")),
-                    str(memory.get("metadata", "")),
-                ]
-            )
+        short_term = [
+            memory
+            for memory in state.memory_context
+            if memory.get("memory_kind") == "short_term"
+        ]
 
-            match = self.INCIDENT_ID_PATTERN.search(searchable)
+        for memory in reversed(short_term):
+            incident_id = self._memory_incident_id(memory)
+            if incident_id:
+                return incident_id
 
-            if match:
-                return match.group(0).upper()
+        long_term = [
+            memory
+            for memory in state.memory_context
+            if memory.get("memory_kind") == "long_term"
+        ]
+
+        for memory in sorted(
+            long_term,
+            key=self._long_term_recency_key,
+            reverse=True,
+        ):
+            incident_id = self._memory_incident_id(memory)
+            if incident_id:
+                return incident_id
+
+        other_memories = [
+            memory
+            for memory in state.memory_context
+            if memory.get("memory_kind")
+            not in {"short_term", "long_term"}
+        ]
+
+        for memory in reversed(other_memories):
+            incident_id = self._memory_incident_id(memory)
+            if incident_id:
+                return incident_id
 
         return None
 
