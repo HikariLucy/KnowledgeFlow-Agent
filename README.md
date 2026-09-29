@@ -2,7 +2,7 @@
 
 Agente inteligente organizacional desarrollado para **ISY0101 - Ingeniería de Soluciones con IA (Evaluación Parcial N°2)**. El proyecto evoluciona directamente desde **KnowledgeFlow RAG**, reutilizando el motor RAG de la EP1 como una herramienta de consulta dentro de una arquitectura agentic con estado, persistencia, herramientas tipadas, memoria y planificación adaptativa.
 
-> **Estado actual:** fundación EP2 en desarrollo sobre la rama feat/ep2-agent-foundation. La base heredada de EP1 se mantiene funcional y la suite completa suma actualmente **184 pruebas automatizadas offline**.
+> **Estado actual:** fundación EP2 en desarrollo sobre la rama feat/ep2-agent-foundation. La base heredada de EP1 se mantiene funcional y la suite completa suma actualmente **195 pruebas automatizadas offline**.
 
 ---
 
@@ -116,11 +116,12 @@ La solución se diseña de forma modular para que cada capacidad pueda probarse 
 - preservación explícita de abstención, citas y fuentes al atravesar la frontera RAG → Tool.
 - **IncidentTools ejecutables** para `create_incident`, `search_incidents` y `append_incident_note`.
 - separación explícita entre consulta documental y escritura operacional.
+- **ShortTermMemory** con ventana configurable de conversación reciente.
+- **LongTermMemoryStore** persistente sobre SQLite.
+- **SemanticMemory** para recuperar memorias relevantes mediante similitud coseno.
 
 ### Próximos hitos
 
-- memoria conversacional de corto plazo;
-- memoria persistente y recuperación semántica;
 - planner;
 - Manager Agent;
 - Knowledge Agent;
@@ -168,6 +169,11 @@ flowchart TD
     KR --> AS
     INC --> AS
     NOTES --> AS
+
+    AS --> STM[ShortTermMemory]
+    AS --> SM[SemanticMemory]
+    SM --> LTM[LongTermMemoryStore]
+    LTM --> DB
 ~~~
 
 La arquitectura actual separa deliberadamente:
@@ -177,6 +183,7 @@ La arquitectura actual separa deliberadamente:
 - **Persistencia operacional**: incidentes y notas.
 - **Schemas de tools**: frontera validada para llamadas de herramientas.
 - **IncidentTools**: operaciones ejecutables de creación, búsqueda y seguimiento sobre SQLite.
+- **Memoria**: ventana reciente en memoria y almacenamiento persistente con recuperación semántica.
 - **Orquestación**: capa aún en construcción.
 
 ---
@@ -249,6 +256,31 @@ Incluye, entre otros:
 - max_iterations.
 
 El estado operacional se mantiene separado de la memoria conversacional a largo plazo.
+
+### Memoria de corto y largo plazo
+
+Ubicación:
+
+~~~text
+app/memory/
+├── models.py
+├── short_term.py
+├── long_term.py
+└── semantic.py
+~~~
+
+Capacidades implementadas:
+
+- ventana de conversación reciente mediante `ShortTermMemory`;
+- aislamiento por `conversation_id`;
+- persistencia de hechos, eventos, resúmenes y resultados de tools;
+- identificadores públicos `MEM-xxxxx`;
+- metadata estructurada en JSON;
+- almacenamiento opcional de embeddings;
+- recuperación semántica con similitud coseno y filtros por conversación;
+- reutilización de la abstracción `BaseEmbeddings` heredada de EP1.
+
+La memoria de corto plazo y la memoria persistente son componentes distintos: la primera mantiene continuidad inmediata, mientras que la segunda permite recuperar experiencias pasadas relevantes.
 
 ### Persistencia SQLite
 
@@ -415,6 +447,12 @@ KnowledgeFlow-Agent/
 │   │   └── config.py
 │   ├── evaluation/
 │   ├── llm/
+│   ├── memory/
+│   │   ├── __init__.py
+│   │   ├── long_term.py
+│   │   ├── models.py
+│   │   ├── semantic.py
+│   │   └── short_term.py
 │   ├── rag/
 │   │   ├── ask.py
 │   │   ├── chunking.py
@@ -452,6 +490,9 @@ KnowledgeFlow-Agent/
 │   ├── test_incident_storage.py
 │   ├── test_incident_tools.py
 │   ├── test_knowledge_tool.py
+│   ├── test_long_term_memory.py
+│   ├── test_semantic_memory.py
+│   ├── test_short_term_memory.py
 │   ├── test_tool_schemas.py
 │   └── ... pruebas heredadas de EP1
 ├── .env.example
@@ -571,7 +612,7 @@ pytest -q
 Estado actual:
 
 ~~~text
-184 passed
+195 passed
 1 warning de deprecación Starlette/FastAPI
 ~~~
 
@@ -613,6 +654,23 @@ test_incident_tools.py
   - filtrado por estado
   - persistencia de notas de seguimiento
   - rechazo controlado de incidentes inexistentes
+
+test_short_term_memory.py
+  - orden cronológico
+  - ventana reciente configurable
+  - aislamiento entre conversaciones
+  - rechazo de mensajes vacíos
+
+test_long_term_memory.py
+  - persistencia SQLite
+  - recarga por identificador
+  - filtrado por conversación
+  - comportamiento ante IDs inexistentes
+
+test_semantic_memory.py
+  - persistencia de embeddings
+  - ranking por similitud
+  - filtrado por conversación
 ~~~
 
 ---
@@ -641,12 +699,12 @@ Controles presentes o planificados:
 | Herramientas de consulta | KnowledgeRAGTool / search_knowledge | Implementado |
 | Herramientas de escritura | create_incident / search_incidents / append_incident_note | Implementado |
 | Framework agentic | diseño modular preparado para CrewAI | Pendiente |
-| Memoria de contenido | separación de estado preparada | Pendiente |
-| Recuperación semántica de contexto | RAG disponible; memoria semántica aún pendiente | Parcial |
+| Memoria de contenido | ShortTermMemory + LongTermMemoryStore | Implementado |
+| Recuperación semántica de contexto | RAG + SemanticMemory por similitud coseno | Implementado |
 | Planificación | AgentState y límite de iteraciones | Base implementada |
 | Decisiones adaptativas | abstención RAG disponible | Parcial |
 | README y arquitectura | este documento + documentación heredada | En progreso |
-| Pruebas | 184 pruebas offline | Implementado |
+| Pruebas | 195 pruebas offline | Implementado |
 | Demo agentic end-to-end | escenarios definidos | Pendiente |
 
 Esta tabla se actualizará a medida que los hitos de EP2 se completen.
@@ -669,10 +727,11 @@ Esta tabla se actualizará a medida que los hitos de EP2 se completen.
 [✓] 179 pruebas verdes
 [✓] IncidentTools ejecutables
 [✓] 184 pruebas verdes
+[✓] short-term memory
+[✓] long-term memory
+[✓] recuperación semántica de memoria
+[✓] 195 pruebas verdes
 
-[ ] short-term memory
-[ ] long-term memory
-[ ] recuperación semántica de memoria
 [ ] planner
 [ ] CrewAI
 [ ] Manager Agent
@@ -722,6 +781,8 @@ Estos documentos corresponden a la etapa RAG y serán complementados con documen
 
 **IncidentTools ejecutables:** d3eaf25
 
-**Suite actual:** 184 pruebas aprobadas.
+**Memoria de corto/largo plazo y recuperación semántica:** cfcfea8
 
-El siguiente hito técnico es incorporar memoria de corto plazo y memoria persistente, para luego avanzar hacia recuperación semántica de contexto y orquestación.
+**Suite actual:** 195 pruebas aprobadas.
+
+El siguiente hito técnico es conectar memoria y estado al planner, para luego avanzar hacia decisiones adaptativas y orquestación.
