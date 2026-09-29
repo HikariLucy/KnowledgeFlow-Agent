@@ -2,7 +2,7 @@
 
 Agente inteligente organizacional desarrollado para **ISY0101 - Ingeniería de Soluciones con IA (Evaluación Parcial N°2)**. El proyecto evoluciona directamente desde **KnowledgeFlow RAG**, reutilizando el motor RAG de la EP1 como una herramienta de consulta dentro de una arquitectura agentic con estado, persistencia, herramientas tipadas, memoria y planificación adaptativa.
 
-> **Estado actual:** fundación EP2 en desarrollo sobre la rama feat/ep2-agent-foundation. La base heredada de EP1 se mantiene funcional y la suite completa suma actualmente **241 pruebas automatizadas offline**.
+> **Estado actual:** fundación EP2 en desarrollo sobre la rama feat/ep2-agent-foundation. La base heredada de EP1 se mantiene funcional y la suite completa suma actualmente **242 pruebas automatizadas offline**.
 
 ---
 
@@ -145,6 +145,7 @@ La solución se diseña de forma modular para que cada capacidad pueda probarse 
 - el flujo de creación conserva ahora también la respuesta grounded del RAG junto con el identificador del incidente en la salida final.
 - el planner usa payloads operacionales validados como hints de intención, evitando clasificar un follow-up de nota como consulta RAG cuando falta memoria.
 - un follow-up de `append_incident_note` sin contexto previo ahora solicita el `incident_id` en vez de ejecutar `search_knowledge` por error.
+- la UI agentic incorpora una acción guiada `Continuar seguimiento de INC-xxxxx` después de crear un incidente, conservando el mismo `conversation_id` y preparando el payload de seguimiento sin reenviar el ID.
 
 ### Próximos hitos
 
@@ -787,7 +788,7 @@ pytest -q
 Estado actual:
 
 ~~~text
-241 passed
+242 passed
 20 warnings de deprecación provenientes de FastAPI/Starlette y CrewAI
 ~~~
 
@@ -923,7 +924,7 @@ Controles presentes o planificados:
 | Planificación | RuleBasedPlanner + AgentState + selección de tools | Implementado |
 | Decisiones adaptativas | abstención, aclaración y bloqueo de escrituras según observaciones | Implementado |
 | README y arquitectura | este documento + documentación heredada | En progreso |
-| Pruebas | 241 pruebas offline | Implementado |
+| Pruebas | 242 pruebas offline | Implementado |
 | Demo agentic end-to-end | API agentic multi-turno + RAG real + escritura + memoria; CrewAI read-only validado | Implementado |
 
 Esta tabla se actualizará a medida que los hitos de EP2 se completen.
@@ -991,6 +992,8 @@ Esta tabla se actualizará a medida que los hitos de EP2 se completen.
 [✓] hints de intención desde payloads validados
 [✓] aclaración segura de follow-up sin memoria
 [✓] 241 pruebas verdes
+[✓] acción guiada UI para follow-up en memoria
+[✓] 242 pruebas verdes
 [ ] evidencia de demo
 [ ] informe EP2
 [ ] presentación EP2
@@ -1044,7 +1047,7 @@ Estos documentos corresponden a la etapa RAG y serán complementados con documen
 
 **Adapters jerárquicos CrewAI:** dda00a9
 
-**Suite actual:** 241 pruebas aprobadas.
+**Suite actual:** 242 pruebas aprobadas.
 
 **Smoke live CrewAI:** PASS con `gemini-3.5-flash-lite`, delegación real a `search_knowledge` y cero escrituras operacionales.
 
@@ -1060,6 +1063,6 @@ Estos documentos corresponden a la etapa RAG y serán complementados con documen
 
 **UI agentic live:** PASS; `GET /agent` cargó correctamente y la ejecución visual de creación de incidente mostró intención, plan, tools, fuentes y observaciones coherentes con el backend.
 
-**Validación local:** 241 pruebas aprobadas, `compileall` correcto, `pip check` sin dependencias rotas y `git diff --check` limpio.
+**Validación local:** 242 pruebas aprobadas tras incorporar la acción guiada de follow-up en la UI; `compileall`, `pip check` y `git diff --check` deben mantenerse verdes en la validación local.
 
 El siguiente hito técnico es validar en la misma UI el follow-up multi-turno basado en memoria y después consolidar la evidencia de demo.
