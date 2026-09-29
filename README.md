@@ -2,7 +2,7 @@
 
 Agente inteligente organizacional desarrollado para **ISY0101 - Ingeniería de Soluciones con IA (Evaluación Parcial N°2)**. El proyecto evoluciona directamente desde **KnowledgeFlow RAG**, reutilizando el motor RAG de la EP1 como una herramienta de consulta dentro de una arquitectura agentic con estado, persistencia, herramientas tipadas, memoria y planificación adaptativa.
 
-> **Estado actual:** fundación EP2 en desarrollo sobre la rama feat/ep2-agent-foundation. La base heredada de EP1 se mantiene funcional y la suite completa suma actualmente **224 pruebas automatizadas offline**.
+> **Estado actual:** fundación EP2 en desarrollo sobre la rama feat/ep2-agent-foundation. La base heredada de EP1 se mantiene funcional y la suite completa suma actualmente **229 pruebas automatizadas offline**.
 
 ---
 
@@ -135,12 +135,14 @@ La solución se diseña de forma modular para que cada capacidad pueda probarse 
 - RAG real reconstruido localmente con 8 documentos, 47 chunks y embeddings `gemini-embedding-2` de 768 dimensiones.
 - consulta RAG real validada: recuperación de `faq_interna.txt`, respuesta grounded, cita `S1` y `abstained=False` para el caso MFA.
 - E2E live CrewAI + RAG real validado: el Manager jerárquico delegó al Knowledge Agent, `KnowledgeRAGTool` ejecutó FAISS/Gemini real, se conservaron fuentes/citas y no hubo escrituras operacionales.
+- **MemoryWriteBack** integrado al orquestador para registrar el turno reciente y persistir eventos operacionales útiles.
+- continuidad multi-turno validada: un incidente creado en un turno puede recuperarse semánticamente en el siguiente sin repetir explícitamente su identificador.
 
 ### Próximos hitos
 
-- integrar write-back de memoria tras ejecuciones exitosas;
+- exponer el flujo agentic mediante una API dedicada;
 - trazabilidad visual de plan, herramientas, memoria y resultados;
-- escenarios end-to-end para la demo de EP2.
+- escenarios end-to-end live de lectura + escritura para la demo de EP2.
 
 ---
 
@@ -413,6 +415,25 @@ Capacidades implementadas:
 - reutilización de la abstracción `BaseEmbeddings` heredada de EP1.
 
 La memoria de corto plazo y la memoria persistente son componentes distintos: la primera mantiene continuidad inmediata, mientras que la segunda permite recuperar experiencias pasadas relevantes.
+
+### MemoryWriteBack
+
+Ubicación:
+
+~~~text
+app/memory/write_back.py
+~~~
+
+Responsabilidades:
+
+- registrar la solicitud del usuario y la respuesta visible en `ShortTermMemory`;
+- persistir selectivamente eventos operacionales relevantes en `SemanticMemory`;
+- guardar creación y seguimiento de incidentes con `incident_id` en metadata;
+- evitar persistir indiscriminadamente cada consulta read-only como memoria operacional;
+- permitir que el planner recupere un incidente previo en un turno posterior;
+- degradar de forma controlada si el write-back falla, sin invalidar una acción operacional ya completada.
+
+La continuidad multi-turno se validó offline con un escenario donde el primer turno crea `INC-00001` y el segundo turno solicita agregar seguimiento sin repetir el ID; el planner recupera el contexto desde memoria semántica y ejecuta `search_incidents` + `append_incident_note`.
 
 ### Persistencia SQLite
 
@@ -758,7 +779,7 @@ pytest -q
 Estado actual:
 
 ~~~text
-224 passed
+229 passed
 20 warnings de deprecación provenientes de FastAPI/Starlette y CrewAI
 ~~~
 
@@ -854,6 +875,13 @@ test_crewai_adapter.py
   - ejecución real de lógica de dominio a través de adapters
   - Task con expected_output explícito
   - construcción de Crew jerárquica con manager_agent
+
+test_memory_write_back.py
+  - write-back user/assistant a memoria de corto plazo
+  - persistencia semántica de creación de incidente
+  - exclusión de consultas read-only de la memoria operacional persistente
+  - recuperación multi-turno de incident_id
+  - seguimiento de un incidente sin repetir su ID en el segundo turno
 ~~~
 
 ---
@@ -882,12 +910,12 @@ Controles presentes o planificados:
 | Herramientas de consulta | KnowledgeRAGTool / search_knowledge | Implementado |
 | Herramientas de escritura | create_incident / search_incidents / append_incident_note | Implementado |
 | Framework agentic | CrewAI 1.15.22 + adapters + Process.hierarchical | Implementado |
-| Memoria de contenido | ShortTermMemory + LongTermMemoryStore | Implementado |
+| Memoria de contenido | ShortTermMemory + LongTermMemoryStore + MemoryWriteBack | Implementado y validado multi-turno |
 | Recuperación semántica de contexto | RAG + SemanticMemory por similitud coseno | Implementado |
 | Planificación | RuleBasedPlanner + AgentState + selección de tools | Implementado |
 | Decisiones adaptativas | abstención, aclaración y bloqueo de escrituras según observaciones | Implementado |
 | README y arquitectura | este documento + documentación heredada | En progreso |
-| Pruebas | 224 pruebas offline | Implementado |
+| Pruebas | 229 pruebas offline | Implementado |
 | Demo agentic end-to-end | CrewAI jerárquico + KnowledgeRAGTool + FAISS/Gemini real | Implementado para consulta read-only |
 
 Esta tabla se actualizará a medida que los hitos de EP2 se completen.
@@ -937,7 +965,12 @@ Esta tabla se actualizará a medida que los hitos de EP2 se completen.
 [✓] consulta real MFA con fuente y cita
 [✓] RAG real dentro de CrewAI
 [✓] E2E read-only con fuentes/citas y cero escrituras
-[ ] decisiones adaptativas end-to-end
+[✓] MemoryWriteBack
+[✓] continuidad multi-turno
+[✓] recuperación semántica de incident_id en follow-up natural
+[✓] 229 pruebas verdes
+[ ] API agentic
+[ ] decisiones adaptativas live de lectura + escritura
 [ ] UI agentic / trace
 [ ] evidencia de demo
 [ ] informe EP2
@@ -992,7 +1025,7 @@ Estos documentos corresponden a la etapa RAG y serán complementados con documen
 
 **Adapters jerárquicos CrewAI:** dda00a9
 
-**Suite actual:** 224 pruebas aprobadas.
+**Suite actual:** 229 pruebas aprobadas.
 
 **Smoke live CrewAI:** PASS con `gemini-3.5-flash-lite`, delegación real a `search_knowledge` y cero escrituras operacionales.
 
@@ -1000,4 +1033,8 @@ Estos documentos corresponden a la etapa RAG y serán complementados con documen
 
 **E2E CrewAI + RAG real:** PASS; dos consultas RAG no abstuvieron, se recuperaron fuentes internas con cita `S1` y no se creó ningún incidente.
 
-El siguiente hito técnico es implementar write-back de memoria para que los resultados y acciones relevantes de una ejecución puedan reutilizarse en turnos posteriores.
+**Memoria multi-turno:** PASS; `MemoryWriteBack` persiste eventos operacionales relevantes y el planner puede recuperar `incident_id` desde memoria semántica en un follow-up natural.
+
+**Validación local:** 229 pruebas aprobadas, `compileall` correcto, `pip check` sin dependencias rotas y `git diff --check` limpio.
+
+El siguiente hito técnico es exponer la ejecución agentic mediante una API dedicada y estructurar la respuesta con estado, plan, tools, memoria, fuentes y resultado para su posterior visualización en la UI.
