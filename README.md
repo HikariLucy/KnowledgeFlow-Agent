@@ -132,10 +132,12 @@ La solución se diseña de forma modular para que cada capacidad pueda probarse 
 - crew jerárquica con `Process.hierarchical` y `manager_agent` personalizado.
 - CrewAI configurado con `memory=False` y `planning=False` para conservar la memoria y planificación propias de KnowledgeFlow.
 - smoke test en vivo con Gemini `gemini-3.5-flash-lite`: delegación jerárquica real al Knowledge Agent, tres invocaciones de `search_knowledge` y cero escrituras operacionales.
+- RAG real reconstruido localmente con 8 documentos, 47 chunks y embeddings `gemini-embedding-2` de 768 dimensiones.
+- consulta RAG real validada: recuperación de `faq_interna.txt`, respuesta grounded, cita `S1` y `abstained=False` para el caso MFA.
 
 ### Próximos hitos
 
-- integrar la crew jerárquica con el RAG real de KnowledgeFlow;
+- validar CrewAI + `KnowledgeRAGTool` + RAG real end-to-end;
 - trazabilidad visual de plan, herramientas, memoria y resultados;
 - escenarios end-to-end para la demo de EP2.
 
@@ -874,7 +876,7 @@ Controles presentes o planificados:
 | Decisiones adaptativas | abstención, aclaración y bloqueo de escrituras según observaciones | Implementado |
 | README y arquitectura | este documento + documentación heredada | En progreso |
 | Pruebas | 224 pruebas offline | Implementado |
-| Demo agentic end-to-end | smoke live jerárquico con Gemini + tool de dominio controlada | Parcial |
+| Demo agentic end-to-end | smoke live jerárquico + RAG real validado de forma aislada | Parcial |
 
 Esta tabla se actualizará a medida que los hitos de EP2 se completen.
 
@@ -919,6 +921,8 @@ Esta tabla se actualizará a medida que los hitos de EP2 se completen.
 [✓] delegación real al Knowledge Agent
 [✓] cero escrituras operacionales en consulta read-only
 
+[✓] RAG real: 8 documentos / 47 chunks / FAISS
+[✓] consulta real MFA con fuente y cita
 [ ] RAG real dentro de CrewAI
 [ ] decisiones adaptativas end-to-end
 [ ] UI agentic / trace
@@ -979,4 +983,6 @@ Estos documentos corresponden a la etapa RAG y serán complementados con documen
 
 **Smoke live CrewAI:** PASS con `gemini-3.5-flash-lite`, delegación real a `search_knowledge` y cero escrituras operacionales.
 
-El siguiente hito técnico es reemplazar el stub del smoke por el `KnowledgeRAGTool` real y verificar el flujo CrewAI → RAG → fuentes/citas con el índice local.
+**Smoke RAG real:** PASS con 47 vectores FAISS; la consulta MFA recuperó `faq_interna.txt`, obtuvo `abstained=False` y cita `S1`.
+
+El siguiente hito técnico es conectar ese `KnowledgeRAGTool` real a la crew jerárquica y verificar el flujo completo CrewAI → RAG → fuentes/citas.
