@@ -148,7 +148,10 @@ class AdaptiveOrchestrator:
         """Plan and execute tools sequentially with adaptive safety checks."""
         inputs = tool_inputs or {}
 
-        decision = self.planner.plan(state)
+        decision = self.planner.plan(
+            state,
+            requested_tools=set(inputs),
+        )
 
         if decision.requires_clarification:
             return self._clarification(
