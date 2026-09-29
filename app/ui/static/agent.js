@@ -29,6 +29,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const resultIncident = document.getElementById("result-incident");
   const resultIterations = document.getElementById("result-iterations");
   const outputEl = document.getElementById("agent-output");
+  const nextActionsEl = document.getElementById("result-next-actions");
+  const prepareFollowupBtn = document.getElementById("prepare-followup-btn");
+  const followupHint = document.getElementById("followup-hint");
 
   const planList = document.getElementById("plan-list");
   const toolList = document.getElementById("tool-list");
@@ -80,6 +83,20 @@ document.addEventListener("DOMContentLoaded", () => {
     incidentDescription.value = "Usuario perdió el dispositivo utilizado para MFA.";
     incidentCategory.value = "access";
     incidentSeverity.value = "medium";
+    messageInput.focus();
+  });
+
+  prepareFollowupBtn.addEventListener("click", () => {
+    actionType.value = "incident_note";
+    updateActionFields();
+    messageInput.value = "Agrega que la identidad ya fue validada.";
+    incidentNote.value = "Identidad del usuario validada.";
+    hideError();
+
+    form.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
     messageInput.focus();
   });
 
@@ -200,6 +217,24 @@ document.addEventListener("DOMContentLoaded", () => {
     resultIterations.textContent = String(data.iteration_count ?? "—");
 
     outputEl.textContent = data.output || "Sin salida visible.";
+
+    const canContinueIncident = (
+      status === "completed"
+      && data.intent === "incident_create"
+      && Boolean(data.incident_id)
+    );
+
+    nextActionsEl.classList.toggle("hidden", !canContinueIncident);
+
+    if (canContinueIncident) {
+      followupHint.textContent = (
+        `Continúa sobre ${data.incident_id} sin cambiar de conversación. `
+        + "El incident_id será resuelto desde la memoria."
+      );
+      prepareFollowupBtn.textContent = (
+        `Continuar seguimiento de ${data.incident_id}`
+      );
+    }
 
     renderPlan(data.plan || [], data.completed_steps || []);
     renderTools(data.tool_calls || []);
