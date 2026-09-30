@@ -6,6 +6,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import router as api_router
+from app.api.agent_routes import router as agent_router
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -23,6 +24,7 @@ if UI_STATIC_DIR.exists():
 
 # Register API routes
 app.include_router(api_router)
+app.include_router(agent_router)
 
 
 @app.get("/", tags=["UI"], include_in_schema=False)
@@ -32,6 +34,15 @@ async def serve_ui():
     if index_file.exists():
         return FileResponse(index_file)
     return {"message": "KnowledgeFlow RAG UI static files not found."}
+
+
+@app.get("/agent", tags=["UI"], include_in_schema=False)
+async def serve_agent_ui():
+    """Serve the KnowledgeFlow Agent EP2 workspace."""
+    agent_file = UI_STATIC_DIR / "agent.html"
+    if agent_file.exists():
+        return FileResponse(agent_file)
+    return {"message": "KnowledgeFlow Agent UI static files not found."}
 
 
 @app.get("/health", tags=["Health"])
