@@ -996,6 +996,7 @@ Esta tabla se actualizará a medida que los hitos de EP2 se completen.
 [✓] acción guiada UI para follow-up en memoria
 [✓] 242 pruebas verdes
 [✓] evidencia de demo multi-turno
+[✓] runbook de demo EP2
 [ ] informe EP2
 [ ] presentación EP2
 ~~~
@@ -1011,6 +1012,8 @@ La documentación técnica de KnowledgeFlow RAG se conserva porque constituye la
 - docs/evidence/implementation-evidence.md
 - docs/evidence/evaluation-evidence.md
 - docs/evidence/demo-runbook.md
+- docs/evidence/ep2-demo-runbook.md
+- docs/evidence/ep2-agent-demo-evidence.md
 - docs/report/report-outline.md
 - docs/presentation/presentation-outline.md
 
