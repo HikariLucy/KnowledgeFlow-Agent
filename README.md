@@ -150,9 +150,9 @@ La solución se diseña de forma modular para que cada capacidad pueda probarse 
 
 ### Próximos hitos
 
-- consolidar evidencia de demo para EP2;
-- ejecutar la suite final tras el último cambio de UI;
-- preparar documentación técnica y material de presentación.
+- estructurar el informe EP2 de máximo 5 páginas;
+- preparar material de presentación;
+- revisar consistencia final entre informe, README y demo.
 
 ---
 
@@ -924,7 +924,7 @@ Controles presentes o planificados:
 | Recuperación semántica de contexto | RAG + SemanticMemory por similitud coseno | Implementado |
 | Planificación | RuleBasedPlanner + AgentState + selección de tools | Implementado |
 | Decisiones adaptativas | abstención, aclaración y bloqueo de escrituras según observaciones | Implementado |
-| README y arquitectura | este documento + documentación heredada | En progreso |
+| README y arquitectura | README + arquitectura final EP2 + Mermaid + evidencia/runbook | Implementado |
 | Pruebas | 242 pruebas offline | Implementado y validado |
 | Demo agentic end-to-end | API agentic multi-turno + RAG real + escritura + memoria; CrewAI read-only validado | Implementado |
 
@@ -997,6 +997,7 @@ Esta tabla se actualizará a medida que los hitos de EP2 se completen.
 [✓] 242 pruebas verdes
 [✓] evidencia de demo multi-turno
 [✓] runbook de demo EP2
+[✓] arquitectura final EP2
 [ ] informe EP2
 [ ] presentación EP2
 ~~~
@@ -1009,6 +1010,8 @@ La documentación técnica de KnowledgeFlow RAG se conserva porque constituye la
 
 - docs/architecture/architecture.md
 - docs/architecture/architecture.mmd
+- docs/architecture/ep2-agent-architecture.md
+- docs/architecture/ep2-agent-architecture.mmd
 - docs/evidence/implementation-evidence.md
 - docs/evidence/evaluation-evidence.md
 - docs/evidence/demo-runbook.md
@@ -1069,4 +1072,4 @@ Estos documentos corresponden a la etapa RAG y serán complementados con documen
 
 **Validación local final:** 242 pruebas aprobadas, `compileall` correcto, `pip check` sin dependencias rotas, `git diff --check` limpio y working tree sin cambios.
 
-El siguiente hito técnico es validar en la misma UI el follow-up multi-turno basado en memoria y después consolidar la evidencia de demo.
+La implementación funcional, la evidencia de demo, el runbook y la arquitectura final EP2 están cerrados. Los hitos restantes son el informe y la presentación.
