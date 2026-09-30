@@ -998,7 +998,8 @@ Esta tabla se actualizará a medida que los hitos de EP2 se completen.
 [✓] evidencia de demo multi-turno
 [✓] runbook de demo EP2
 [✓] arquitectura final EP2
-[ ] informe EP2
+[✓] estructura informe EP2
+[ ] redacción final informe EP2 por el equipo
 [ ] presentación EP2
 ~~~
 
@@ -1018,6 +1019,7 @@ La documentación técnica de KnowledgeFlow RAG se conserva porque constituye la
 - docs/evidence/ep2-demo-runbook.md
 - docs/evidence/ep2-agent-demo-evidence.md
 - docs/report/report-outline.md
+- docs/report/ep2-report-outline.md
 - docs/presentation/presentation-outline.md
 
 Estos documentos corresponden a la etapa RAG y serán complementados con documentación específica de agentes, memoria, planificación y orquestación durante EP2.
